@@ -54,19 +54,20 @@ def create_dataset(filepath, url_col=None, label_col=None, num_processes=10):
 		except ValueError:
 			raise ValueError(f"Label column {label_col} not found in csv headers {csv.columns}")
 
-	num_items = len(csv)
-	print(f"Downloading {num_items} items...")
+	print(f"Downloading {len(csv)} items...")
 
 	# create our processes that will download the images
 	# first create the queue for the worker job parameters and the results
 	jobs = Queue()
 	results = Queue()
+	errors = []
 	# now make the processes
 	processes = [Process(target=_worker, args=(jobs, results, filename)) for _ in range(num_processes)]
 	for process in processes:
 		process.start()
 
 	# iterate over the rows and add to our download processing job!
+	num_jobs = 0
 	for i, row in enumerate(csv.itertuples(index=False)):
 		# job is passed to our worker processes
 		job = DownloadJob(index=i+1, url=row[url_col_idx])
@@ -74,12 +75,12 @@ def create_dataset(filepath, url_col=None, label_col=None, num_processes=10):
 			label = row[label_col_idx]
 			job.label = None if pd.isnull(label) else label
 		jobs.put(job)
+		num_jobs += 1
 
 	# iterate over the results dictionary to update our progress bar and write any errors to the error csv
 	num_processed = 0
-	errors = []
-	with tqdm(total=num_items) as pbar:
-		while num_processed < num_items:
+	with tqdm(total=num_jobs) as pbar:
+		while num_processed < num_jobs:
 			# result is a DownloadJob with success filled out
 			result: DownloadJob = results.get()
 			if not result.success:
@@ -96,7 +97,7 @@ def create_dataset(filepath, url_col=None, label_col=None, num_processes=10):
 	if len(errors) > 0:
 		errors.sort()
 		error_file = os.path.splitext(filepath)[0] + "_errors.csv"
-		with open(error_file, 'w') as f:
+		with open(error_file, 'w', newline='') as f:
 			header = f"index,url{',label' if label_col_idx else ''}\n"
 			f.write(header)
 			writer = csv_writer(f)
@@ -122,7 +123,7 @@ def _worker(jobs, results, dest_folder):
 			if job.label is not None:
 				save_dir = os.path.join(save_dir, job.label)
 			img_file = _get_filepath(url=job.url, save_dir=save_dir)
-			request = requests.get(job.url)
+			request = requests.get(job.url, timeout=30)
 			if request.ok:
 				# make our destination directory if it doesn't exist
 				Path(save_dir).mkdir(parents=True, exist_ok=True)
@@ -184,7 +185,7 @@ def _valid_file(filepath):
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='Download an image dataset from csv or txt file.')
 	parser.add_argument('file', help='Path to your csv or txt file.')
-	parser.add_argument('--url_col', help='If this is a csv with column headers, the column that contains the image urls to download.')
-	parser.add_argument('--label_col', help='If this is a csv with column headers, the column that contains the labels to assign the images.')
+	parser.add_argument('--url', help='If this is a csv with column headers, the column that contains the image urls to download.')
+	parser.add_argument('--label', help='If this is a csv with column headers, the column that contains the labels to assign the images.')
 	args = parser.parse_args()
-	create_dataset(filepath=args.file, url_col=args.url_col, label_col=args.label_col)
+	create_dataset(filepath=args.file, url_col=args.url, label_col=args.label)

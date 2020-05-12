@@ -53,7 +53,7 @@ def predict_dataset(filepath, model_dir, url_col=None):
 	for i, row in tqdm(enumerate(csv.itertuples(index=False)), total=len(csv)):
 		url = row[url_col_idx]
 		try:
-			response = requests.get(url)
+			response = requests.get(url, timeout=30)
 			if response.ok:
 				image = Image.open(BytesIO(response.content))
 				predictions = model.predict(image)
@@ -92,6 +92,6 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='Label an image dataset from csv or txt file.')
 	parser.add_argument('file', help='Path to your csv or txt file.')
 	parser.add_argument('model_dir', help='Path to your SavedModel from Lobe.')
-	parser.add_argument('--url_col', help='If this is a csv with column headers, the column that contains the image urls to download.')
+	parser.add_argument('--url', help='If this is a csv with column headers, the column that contains the image urls to download.')
 	args = parser.parse_args()
-	predict_dataset(filepath=args.file, model_dir=args.model_dir, url_col=args.url_col)
+	predict_dataset(filepath=args.file, model_dir=args.model_dir, url_col=args.url)
