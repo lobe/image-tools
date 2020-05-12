@@ -7,9 +7,19 @@ from csv import writer as csv_writer
 from multiprocessing import Process, Queue
 import requests
 import pandas as pd
-import numpy as np
 from tqdm import tqdm
 from pathlib import Path
+
+
+class DownloadJob(object):
+	"""
+	Object with information to pass across processes when downloading images.
+	"""
+	def __init__(self, index: int, url: str, label: str = None, success: bool = None):
+		self.index = index
+		self.url = url
+		self.label = label
+		self.success = success
 
 
 def create_dataset(filepath, url_col=None, label_col=None, num_processes=10):
@@ -58,11 +68,11 @@ def create_dataset(filepath, url_col=None, label_col=None, num_processes=10):
 
 	# iterate over the rows and add to our download processing job!
 	for i, row in enumerate(csv.itertuples(index=False)):
-		# job is a dict in the form of {'index': int, 'url': string, 'label': Optional[string]}
-		job = {'index': i+1, 'url': row[url_col_idx]}
+		# job is passed to our worker processes
+		job = DownloadJob(index=i+1, url=row[url_col_idx])
 		if label_col_idx:
 			label = row[label_col_idx]
-			job['label'] = None if pd.isnull(label) else label
+			job.label = None if pd.isnull(label) else label
 		jobs.put(job)
 
 	# iterate over the results dictionary to update our progress bar and write any errors to the error csv
@@ -70,12 +80,12 @@ def create_dataset(filepath, url_col=None, label_col=None, num_processes=10):
 	errors = []
 	with tqdm(total=num_items) as pbar:
 		while num_processed < num_items:
-			# result is a dict of {'index': int, 'url': string, 'label': Optional[string], 'success': bool}
-			result = results.get()
-			if not result.get('success'):
-				error_row = [result.get('index'), result.get('url')]
+			# result is a DownloadJob with success filled out
+			result: DownloadJob = results.get()
+			if not result.success:
+				error_row = [result.index, result.url]
 				if label_col_idx:
-					error_row.append(result.get('label'))
+					error_row.append(result.label)
 				errors.append(error_row)
 			# update progress
 			pbar.update(1)
@@ -103,33 +113,29 @@ def create_dataset(filepath, url_col=None, label_col=None, num_processes=10):
 
 def _worker(jobs, results, dest_folder):
 	while True:
-		# job is a dict in the form of {'index': int, 'url': string, 'label': Optional[string]}
-		job = jobs.get()
-		url = job.get('url')
-		label = job.get('label')
+		# job from the queue
+		job: DownloadJob = jobs.get()
 		success = True
 		try:
-			filename = str(url.split('/')[-1])
 			# get our image save location
 			save_dir = os.path.abspath(dest_folder)
-			if label is not None:
-				save_dir = os.path.join(save_dir, label)
-			save_fpath = os.path.join(save_dir, filename)
-			# skip if the file exists
-			if not os.path.exists(save_fpath):
-				request = requests.get(url)
-				if request.ok:
-					# make our destination directory if it doesn't exist
-					Path(save_dir).mkdir(parents=True, exist_ok=True)
-					# save the image!
-					with open(os.path.join(save_dir, filename), 'wb') as f:
-						f.write(request.content)
-				else:
-					success = False
+			if job.label is not None:
+				save_dir = os.path.join(save_dir, job.label)
+			img_file = _get_filepath(url=job.url, save_dir=save_dir)
+			request = requests.get(job.url)
+			if request.ok:
+				# make our destination directory if it doesn't exist
+				Path(save_dir).mkdir(parents=True, exist_ok=True)
+				# save the image!
+				with open(img_file, 'wb') as f:
+					f.write(request.content)
+			else:
+				success = False
 		except Exception:
 			success = False
-		# result is a dict of {'index': int, 'url': string, 'label': Optional[string], 'success': bool}
-		results.put({'index': job.get('index'), 'url': url, 'label': label, 'success': success})
+		# add success to the job and put on the queue
+		job.success = success
+		results.put(job)
 
 
 def _name_and_extension(filepath):
@@ -141,6 +147,28 @@ def _name_and_extension(filepath):
 	filename = os.path.split(fpath)[-1]
 	name, ext = os.path.splitext(filename)
 	return name, str.lower(ext)
+
+
+def _get_filepath(url, save_dir):
+	sep = "__"
+	# given a url and download folder, return the full filepath to image to save
+	# get the name from the last url segment
+	filename = str(url.split('/')[-1])
+	# if this file already exists in the path, increment its name
+	# (since different URLs can have the same end filename)
+	while os.path.exists(os.path.join(save_dir, filename)):
+		name, extension = os.path.splitext(filename)
+		name_parts = name.rsplit(sep, 1)
+		base_name = name_parts[0]
+		# get the counter value after the sep
+		counter = 1
+		if len(name_parts) > 1:
+			try:
+				counter = int(name_parts[-1]) + 1
+			except ValueError:
+				base_name = sep.join(name_parts)
+		filename = f"{base_name}{sep}{counter}{extension}"
+	return os.path.join(save_dir, filename)
 
 
 def _valid_file(filepath):

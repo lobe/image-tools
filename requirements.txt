@@ -1,3 +1,7 @@
 pandas==1.0.3
 tqdm==4.45.0
 requests==2.23.0
+pyinstaller==3.6
+tensorflow==1.14
+PyQT5==5.14.2
+pillow==7.1.2
