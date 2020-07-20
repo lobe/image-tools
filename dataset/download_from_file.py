@@ -22,7 +22,7 @@ class DownloadJob(object):
 		self.success = success
 
 
-def create_dataset(filepath, url_col=None, label_col=None, num_processes=10):
+def create_dataset(filepath, url_col=None, label_col=None, num_processes=10, progress_hook=None):
 	"""
 	Given a file with urls to images, downloads those images to a new directory that has the same name
 	as the file without the extension. If labels are present, further categorizes the directory to have
@@ -32,14 +32,18 @@ def create_dataset(filepath, url_col=None, label_col=None, num_processes=10):
 	:param url_col: if this is a csv, the column header name for the urls to download.
 	:param label_col: if this is a csv, the column header name for the labels of the images.
 	:param num_processes: the number of processes to use for the multiprocessing pool.
+	:param progress_hook: an optional function that will be run with progress_hook(currentProgress, totalProgress) when progress updates.
 	"""
 	print(f"Processing {filepath}")
 	filepath = os.path.abspath(filepath)
 	filename, ext = _name_and_extension(filepath)
 	# read the file
 	# if this a .txt file, don't treat the first row as a header. Otherwise, use the first row for header column names.
-	csv = pd.read_csv(filepath, header=None if ext == '.txt' else 0)
-	if ext == '.csv' and not url_col:
+	if ext != '.xlsx':
+		csv = pd.read_csv(filepath, header=None if ext == '.txt' else 0)
+	else:
+		csv = pd.read_excel(filepath, header=0)
+	if ext in ['.csv', '.xlsx'] and not url_col:
 		raise ValueError(f"Please specify an image url column for the csv.")
 	url_col_idx = 0
 	if url_col:
@@ -91,12 +95,15 @@ def create_dataset(filepath, url_col=None, label_col=None, num_processes=10):
 			# update progress
 			pbar.update(1)
 			num_processed += 1
+			if progress_hook:
+				progress_hook(num_processed, num_jobs)
 
 	print('Cleaning up...')
 	# write out the error csv
 	if len(errors) > 0:
 		errors.sort()
-		error_file = os.path.splitext(filepath)[0] + "_errors.csv"
+		fname, ext = os.path.splitext(filepath)
+		error_file = f"{fname}_errors.csv"
 		with open(error_file, 'w', newline='') as f:
 			header = f"index,url{',label' if label_col_idx else ''}\n"
 			f.write(header)
@@ -174,7 +181,7 @@ def _get_filepath(url, save_dir):
 
 def _valid_file(filepath):
 	# file must exist and have a valid extension
-	valid_extensions = ['.txt', '.csv']
+	valid_extensions = ['.txt', '.csv', '.xlsx']
 	_, extension = _name_and_extension(filepath)
 	if extension not in valid_extensions:
 		raise ValueError(f"File {filepath} doesn't have one of the valid extensions: {valid_extensions}")

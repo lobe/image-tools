@@ -38,3 +38,13 @@ and create and output csv with the url, label, and confidence
   
 * txt file
   * separate each image url by a newline
+  
+  
+##Desktop Application
+You can create a desktop GUI application using PyInstaller:
+
+```bash
+python -m PyInstaller app/app.spec
+```
+
+This will create a `dist/` folder that will contain the application executable `Image Tools.exe`
