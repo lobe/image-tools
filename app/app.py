@@ -214,7 +214,7 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     icon_path = 'assets/icon.ico' if os.path.exists('assets/icon.ico') else 'app/assets/icon.ico'
     app.setWindowIcon(QtGui.QIcon(icon_path))
-    app.setStyleSheet("QPushButton { margin-left: 0px; margin-right: 10px; margin-top: 10px; min-width: 160px; max-width: 160px; min-height: 30px; max-height: 30px; }")
+    app.setStyleSheet("QPushButton { margin-left: 0px; margin-right: 10px; margin-top: 15px; padding: 10px;}")
 
     w = MainWindow(app)
     app.exec()
