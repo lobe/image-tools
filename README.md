@@ -11,7 +11,7 @@ pip install -r requirements.txt
 
 ## Usage
 ### CSV or TXT files
-####Downloading an image dataset from the urls in a csv or txt file:
+#### Downloading an image dataset from the urls in a csv or txt file:
 ```bash
 python dataset/download_from_file.py your_file.csv --url UrlHeader --label LabelHeader
 ```
@@ -26,7 +26,7 @@ grouped into sub-folders with the label name.
 * txt file
   * separate each image url by a newline
 
-####Predicting labels and confidences for images in a csv or txt file:
+#### Predicting labels and confidences for images in a csv or txt file:
 ```bash
 python -m model.predict_from_file your_file.csv path/to/lobe/savedmodel --url UrlHeader
 ```
@@ -40,7 +40,7 @@ and create and output csv with the url, label, and confidence
   * separate each image url by a newline
   
   
-##Desktop Application
+## Desktop Application
 You can create a desktop GUI application using PyInstaller:
 
 ```bash
