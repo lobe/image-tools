@@ -41,8 +41,6 @@ class MainWindow(QMainWindow):
         self.radio_boxes = []
         self.radio_buttons = []
 
-        self.download_button = QPushButton('Download Images')
-
         self.run_button = QPushButton('Run')
         self.run_button_idle()
 
