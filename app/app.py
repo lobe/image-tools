@@ -1,4 +1,4 @@
-from PyQt5 import QtGui
+from PyQt5 import QtGui, QtCore
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QHBoxLayout,
     QDesktopWidget, QFrame
@@ -18,6 +18,12 @@ try:
     QtWin.setCurrentProcessExplicitAppUserModelID('image-tools.0.1')
 except ImportError:
     pass
+
+if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
+    QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
+
+if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
+    QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
 
 
 # style variables
