@@ -22,7 +22,7 @@ class DownloadJob(object):
 		self.success = success
 
 
-def create_dataset(filepath, url_col=None, label_col=None, num_processes=10, progress_hook=None):
+def create_dataset(filepath, url_col=None, label_col=None, num_processes=10, progress_hook=None, destination_directory=None):
 	"""
 	Given a file with urls to images, downloads those images to a new directory that has the same name
 	as the file without the extension. If labels are present, further categorizes the directory to have
@@ -33,6 +33,7 @@ def create_dataset(filepath, url_col=None, label_col=None, num_processes=10, pro
 	:param label_col: if this is a csv, the column header name for the labels of the images.
 	:param num_processes: the number of processes to use for the multiprocessing pool.
 	:param progress_hook: an optional function that will be run with progress_hook(currentProgress, totalProgress) when progress updates.
+	:param destination_directory: an optional directory path to download the dataset to.
 	"""
 	print(f"Processing {filepath}")
 	filepath = os.path.abspath(filepath)
@@ -66,7 +67,8 @@ def create_dataset(filepath, url_col=None, label_col=None, num_processes=10, pro
 	results = Queue()
 	errors = []
 	# now make the processes
-	processes = [Process(target=_worker, args=(jobs, results, filename)) for _ in range(num_processes)]
+	dest = os.path.join(destination_directory, filename) if destination_directory else filename
+	processes = [Process(target=_worker, args=(jobs, results, dest)) for _ in range(num_processes)]
 	for process in processes:
 		process.start()
 
