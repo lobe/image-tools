@@ -16,9 +16,12 @@ def download_by_geo(api_key, min_lat, min_long, max_lat, max_long, directory, si
 		'method': 'flickr.photos.search',
 		'bbox': ','.join([min_long, min_lat, max_long, max_lat]),
 		'page': 1,
+		'per_page': 250,
 	}
 	response = requests.get(url=url, params=params)
 	num_jobs = 0
+	urls = []
+	duplicates = 0
 	if response.ok:
 		root = ET.fromstring(response.content)
 		page = root.find('photos')
@@ -28,7 +31,7 @@ def download_by_geo(api_key, min_lat, min_long, max_lat, max_long, directory, si
 		downloader = MultiprocessDownload(directory=directory, num_processes=num_processes)
 		for i in range(pages):
 			params['page'] = i+1
-			print(f"Page {i+1} / {pages}")
+			print(f"Reading page {i+1} / {pages}")
 			response = requests.get(url=url, params=params)
 			if response.ok:
 				root = ET.fromstring(response.content)
@@ -39,8 +42,12 @@ def download_by_geo(api_key, min_lat, min_long, max_lat, max_long, directory, si
 					photo_id = photo.get('id')
 					secret = photo.get('secret')
 					img_url = f"https://farm{farm_id}.staticflickr.com/{server_id}/{photo_id}_{secret}_{size}.jpg"
-					downloader.add_job(index=num_jobs, url=img_url)
-					num_jobs += 1
+					if img_url not in urls:
+						downloader.add_job(index=num_jobs, url=img_url)
+						num_jobs += 1
+						urls.append(img_url)
+					else:
+						duplicates += 1
 
 		# iterate over the results dictionary to update our progress bar and write any errors to the error csv
 		num_processed = 0
@@ -56,7 +63,7 @@ def download_by_geo(api_key, min_lat, min_long, max_lat, max_long, directory, si
 				num_processed += 1
 				if progress_hook:
 					progress_hook(num_processed, num_jobs)
-		print(f"Done. Had {errors} errors.")
+		print(f"Done. Had {errors} errors, found {duplicates} duplicates.")
 
 
 if __name__ == '__main__':
