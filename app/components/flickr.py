@@ -17,6 +17,8 @@ class Flickr(QFrame):
 		self.min_long_textbox = None
 		self.max_lat_textbox = None
 		self.max_long_textbox = None
+		self.download_button = None
+		self.progress_bar = None
 		self.init_ui()
 
 	def init_ui(self):
@@ -63,7 +65,7 @@ class Flickr(QFrame):
 
 		# download button
 		self.download_button = QPushButton(self.download_text)
-		self.download_button.setEnabled(False)
+		self.download_button.setEnabled(True)
 		self.download_button.clicked.connect(self.download)
 		download_container = NoStretch(self.download_button)
 		download_container.setObjectName("separate")
@@ -94,19 +96,10 @@ class Flickr(QFrame):
 		layout.addStretch(1)
 		self.setLayout(layout)
 
-	def select_directory(self):
-		self.directory = QFileDialog.getExistingDirectory(self, "Select destination directory for images.")
-		self.directory_label.setText(f"<i>{self.directory}</i>" if self.directory else self.default_text)
-		self.check_download_button()
-
-	def check_download_button(self):
-		return self.api_textbox.text and self.min_long_textbox.text and self.min_lat_textbox.text and self.max_long_textbox.text and self.max_lat_textbox.text
-
 	def download(self):
 		# disable the buttons so we can't click again
 		self.download_button.setEnabled(False)
 		self.download_button.setText(self.downloading_text)
-		self.directory_button.setEnabled(False)
 		self.progress_bar.setValue(0)
 		self.progress_bar.show()
 		self.app.processEvents()
@@ -138,5 +131,4 @@ class Flickr(QFrame):
 		self.progress_bar.hide()
 		self.download_button.setEnabled(True)
 		self.download_button.setText(self.download_text)
-		self.directory_button.setEnabled(True)
 		self.app.processEvents()
