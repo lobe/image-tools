@@ -1,5 +1,5 @@
 # Image Tools: creating image datasets
-Image Wrangler helps you form machine learning datasets for image classification.
+Image Tools helps you form machine learning datasets for image classification.
 
 ## Setup
 These tools were developed with python 3.7.7
@@ -13,7 +13,7 @@ pip install -r requirements.txt
 ### CSV or TXT files
 #### Downloading an image dataset from the urls in a csv or txt file:
 ```bash
-python dataset/download_from_file.py your_file.csv --url UrlHeader --label LabelHeader
+python -m dataset.download_from_file your_file.csv --url UrlHeader --label LabelHeader
 ```
 This downloader script takes either a csv or txt file and will format an image dataset for you. The resulting images 
 will be downloaded to a folder with the same name as your input file. If you supplied labels, the images will be 
@@ -31,13 +31,20 @@ grouped into sub-folders with the label name.
 python -m model.predict_from_file your_file.csv path/to/lobe/savedmodel --url UrlHeader
 ```
 This prediction script will take a csv or txt file with urls to images and a Lobe TensorFlow SavedModel export directory, 
-and create and output csv with the url, label, and confidence
+and create and output csv with the label and confidence as the last two columns.
 
 * csv file
   * specify the column header for the image urls with the --url flag
   
 * txt file
   * separate each image url by a newline
+  
+  
+### Flickr
+Download images from Flickr by latitude and longitude bounding box location.
+```bash
+python -m dataset.download_from_flickr api_key min_lat min_long max_lat max_long dest_folder
+```
   
   
 ## Desktop Application

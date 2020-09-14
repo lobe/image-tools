@@ -7,6 +7,7 @@ import os
 from io import BytesIO
 import requests
 import pandas as pd
+from csv import writer as csv_writer
 from tqdm import tqdm
 from model.model import ImageClassification
 from PIL import Image
@@ -50,9 +51,10 @@ def predict_dataset(filepath, model_dir, url_col=None, progress_hook=None):
 	# create our output csv
 	fname, ext = os.path.splitext(filepath)
 	out_file = f"{fname}_predictions.csv"
-	with open(out_file, 'w') as f:
-		header = f"url,label,confidence\n"
-		f.write(header)
+	with open(out_file, 'w', encoding="utf-8", newline='') as f:
+		# our header names from the pandas columns
+		writer = csv_writer(f)
+		writer.writerow([*[str(col) if not pd.isna(col) else '' for col in csv.columns], 'label', 'confidence'])
 
 	# iterate over the rows and predict the label
 	for i, row in tqdm(enumerate(csv.itertuples(index=False)), total=len(csv)):
@@ -68,8 +70,9 @@ def predict_dataset(filepath, model_dir, url_col=None, progress_hook=None):
 				label, confidence = '', ''
 		except:
 			label, confidence = '', ''
-		with open(out_file, 'a') as f:
-			f.write(f"{url},{label},{confidence}\n")
+		with open(out_file, 'a', encoding="utf-8", newline='') as f:
+			writer = csv_writer(f)
+			writer.writerow([*[str(col) if not pd.isna(col) else '' for col in row], label, confidence])
 		if progress_hook:
 			progress_hook(i+1, len(csv))
 
