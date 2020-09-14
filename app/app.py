@@ -9,6 +9,7 @@ from multiprocessing import freeze_support
 from app.components.navbar import NavBar
 from app.components.dataset import Dataset
 from app.components.model import Model
+from app.components.flickr import Flickr
 from app import ASSETS_PATH
 
 
@@ -61,12 +62,15 @@ class MainWindow(QMainWindow):
         navbar = NavBar(self.nav_click)
         self.dataset = Dataset(self.app)
         self.model = Model(self.app)
+        self.flickr = Flickr(self.app)
         # we are on dataset tab by default
         self.model.hide()
+        self.flickr.hide()
 
         app_layout.addWidget(navbar)
         app_layout.addWidget(self.dataset)
         app_layout.addWidget(self.model)
+        app_layout.addWidget(self.flickr)
         app_layout.setContentsMargins(0, 0, 0, 0)
         app_layout.setSpacing(0)
 
@@ -88,9 +92,15 @@ class MainWindow(QMainWindow):
             if button == "Dataset":
                 self.model.hide()
                 self.dataset.show()
+                self.flickr.hide()
             elif button == "Model":
                 self.dataset.hide()
                 self.model.show()
+                self.flickr.hide()
+            elif button == "Flickr":
+                self.flickr.show()
+                self.dataset.hide()
+                self.model.hide()
             self.nav = button
 
 

@@ -31,10 +31,14 @@ class NavBar(QFrame):
 		# model button
 		model_button = self.nav_button("Model")
 
+		# flickr button
+		flickr_button = self.nav_button("Flickr")
+
 		layout = QVBoxLayout()
 		layout.addWidget(label)
 		layout.addWidget(dataset_button)
 		layout.addWidget(model_button)
+		layout.addWidget(flickr_button)
 		layout.addStretch(1)
 		layout.setContentsMargins(0, 0, 0, 0)
 		layout.setSpacing(0)
