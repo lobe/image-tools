@@ -111,8 +111,8 @@ class Flickr(QFrame):
 		# otherwise try downloading to the desired location
 		try:
 			download_by_geo(
-				api_key=self.api_textbox.text, min_lat=self.min_lat_textbox.text, min_long=self.min_long_textbox.text,
-				max_lat=self.max_lat_textbox.text, max_long=self.max_long_textbox.text,
+				api_key=self.api_textbox.text(), min_lat=self.min_lat_textbox.text(), min_long=self.min_long_textbox.text(),
+				max_lat=self.max_lat_textbox.text(), max_long=self.max_long_textbox.text(),
 				progress_hook=self.progress_hook, directory=destination_directory
 			)
 		except Exception as e:
