@@ -41,9 +41,9 @@ and create and output csv with the label and confidence as the last two columns.
   
   
 ### Flickr
-Download images from Flickr by latitude and longitude bounding box location.
+Download images from Flickr by latitude and longitude bounding box location and any desired tags.
 ```bash
-python -m dataset.download_from_flickr api_key min_lat min_long max_lat max_long dest_folder
+python -m dataset.download_from_flickr api_key dest_folder --bbox min_lat,min_long,max_lat,max_long --search searchTerm
 ```
   
   

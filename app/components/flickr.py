@@ -1,7 +1,8 @@
+import os
 from PyQt5.QtWidgets import (QPushButton, QVBoxLayout, QHBoxLayout, QFrame, QLabel, QFileDialog, QMessageBox,
                              QProgressBar, QLineEdit)
 from app.components.stretch_wrapper import NoStretch
-from dataset.download_from_flickr import download_by_geo
+from dataset.download_from_flickr import download_flickr
 
 
 class Flickr(QFrame):
@@ -17,6 +18,7 @@ class Flickr(QFrame):
 		self.min_long_textbox = None
 		self.max_lat_textbox = None
 		self.max_long_textbox = None
+		self.search_textbox = None
 		self.download_button = None
 		self.progress_bar = None
 		self.init_ui()
@@ -62,6 +64,12 @@ class Flickr(QFrame):
 		self.max_long_textbox = QLineEdit()
 		max_long_container = NoStretch(self.max_long_textbox)
 
+		# search term
+		search_label = QLabel("Search term:")
+		search_label.setObjectName("separateSmall")
+		self.search_textbox = QLineEdit()
+		search_container = NoStretch(self.search_textbox)
+
 
 		# download button
 		self.download_button = QPushButton(self.download_text)
@@ -87,6 +95,8 @@ class Flickr(QFrame):
 		content_layout.addWidget(max_lat_container)
 		content_layout.addWidget(maxlong_label)
 		content_layout.addWidget(max_long_container)
+		content_layout.addWidget(search_label)
+		content_layout.addWidget(search_container)
 		content_layout.addWidget(download_container)
 		content_layout.addWidget(self.progress_bar)
 		content_layout.addStretch(1)
@@ -110,10 +120,16 @@ class Flickr(QFrame):
 			return
 		# otherwise try downloading to the desired location
 		try:
-			download_by_geo(
-				api_key=self.api_textbox.text(), min_lat=self.min_lat_textbox.text(), min_long=self.min_long_textbox.text(),
-				max_lat=self.max_lat_textbox.text(), max_long=self.max_long_textbox.text(),
-				progress_hook=self.progress_hook, directory=destination_directory
+			download_flickr(
+				api_key=self.api_textbox.text(),
+				directory=destination_directory,
+				min_lat=self.min_lat_textbox.text() or None,
+				min_long=self.min_long_textbox.text() or None,
+				max_lat=self.max_lat_textbox.text() or None,
+				max_long=self.max_long_textbox.text() or None,
+				search=self.search_textbox.text() or None,
+				progress_hook=self.progress_hook,
+				num_processes=max((os.cpu_count() - 1), 1)
 			)
 		except Exception as e:
 			QMessageBox.about(self, "Alert", f"Error creating dataset: {e}")

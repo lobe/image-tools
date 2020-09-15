@@ -54,50 +54,55 @@ def create_dataset(filepath, url_col=None, label_col=None, num_processes=os.cpu_
 	dest = os.path.join(destination_directory, filename) if destination_directory else filename
 	downloader = MultiprocessDownload(directory=dest, num_processes=num_processes)
 
-	# iterate over the rows and add to our download processing job!
-	num_jobs = 0
-	for i, row in enumerate(csv.itertuples(index=False)):
-		# job is passed to our worker processes
-		index = i + 1
-		url = row[url_col_idx]
-		label = None
-		if label_col_idx:
-			label = row[label_col_idx]
-			label = None if pd.isnull(label) else label
-		downloader.add_job(index=index, url=url, label=label)
-		num_jobs += 1
+	# try/catch for keyboard interrupt
+	try:
+		# iterate over the rows and add to our download processing job!
+		num_jobs = 0
+		for i, row in enumerate(csv.itertuples(index=False)):
+			# job is passed to our worker processes
+			index = i + 1
+			url = row[url_col_idx]
+			label = None
+			if label_col_idx:
+				label = row[label_col_idx]
+				label = None if pd.isnull(label) else label
+			downloader.add_job(index=index, url=url, label=label)
+			num_jobs += 1
 
-	# iterate over the results dictionary to update our progress bar and write any errors to the error csv
-	num_processed = 0
-	with tqdm(total=num_jobs) as pbar:
-		while num_processed < num_jobs:
-			# result is a DownloadJob with success filled out
-			result: DownloadJob = downloader.results.get()
-			if not result.success:
-				error_row = [result.index, result.url]
-				if label_col_idx:
-					error_row.append(result.label)
-				errors.append(error_row)
-			# update progress
-			pbar.update(1)
-			num_processed += 1
-			if progress_hook:
-				progress_hook(num_processed, num_jobs)
+		# iterate over the results dictionary to update our progress bar and write any errors to the error csv
+		num_processed = 0
+		with tqdm(total=num_jobs) as pbar:
+			while num_processed < num_jobs:
+				# result is a DownloadJob with success filled out
+				result: DownloadJob = downloader.results.get()
+				if not result.success:
+					error_row = [result.index, result.url]
+					if label_col_idx:
+						error_row.append(result.label)
+					errors.append(error_row)
+				# update progress
+				pbar.update(1)
+				num_processed += 1
+				if progress_hook:
+					progress_hook(num_processed, num_jobs)
 
-	print('Cleaning up...')
-	# write out the error csv
-	if len(errors) > 0:
-		errors.sort()
-		fname, ext = os.path.splitext(filepath)
-		error_file = f"{fname}_errors.csv"
-		with open(error_file, 'w', newline='') as f:
-			header = f"index,url{',label' if label_col_idx else ''}\n"
-			f.write(header)
-			writer = csv_writer(f)
-			writer.writerows(errors)
+		print('Cleaning up...')
+		# write out the error csv
+		if len(errors) > 0:
+			errors.sort()
+			fname, ext = os.path.splitext(filepath)
+			error_file = f"{fname}_errors.csv"
+			with open(error_file, 'w', newline='') as f:
+				header = f"index,url{',label' if label_col_idx else ''}\n"
+				f.write(header)
+				writer = csv_writer(f)
+				writer.writerows(errors)
 
-	# terminate the processes
-	downloader.stop()
+	except Exception:
+		raise
+	finally:
+		# terminate the processes, we are done
+		downloader.stop()
 
 
 def _name_and_extension(filepath):

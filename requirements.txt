@@ -2,7 +2,7 @@ pandas==1.0.5
 xlrd==1.2.0
 tqdm==4.48.0
 requests==2.24.0
-pyinstaller==3.6
+pyinstaller>=4.0
 tensorflow==1.15.2
 PyQT5==5.15.0
 pillow==7.2.0
