@@ -6,11 +6,12 @@ import os
 from csv import writer as csv_writer
 import pandas as pd
 from tqdm import tqdm
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from threading import Lock
+from dataset.utils import download_image
 
-from dataset.multiprocess_download import DownloadJob, MultiprocessDownload
 
-
-def create_dataset(filepath, url_col=None, label_col=None, num_processes=os.cpu_count(), progress_hook=None, destination_directory=None):
+def create_dataset(filepath, url_col=None, label_col=None, progress_hook=None, destination_directory=None):
 	"""
 	Given a file with urls to images, downloads those images to a new directory that has the same name
 	as the file without the extension. If labels are present, further categorizes the directory to have
@@ -47,44 +48,48 @@ def create_dataset(filepath, url_col=None, label_col=None, num_processes=os.cpu_
 		except ValueError:
 			raise ValueError(f"Label column {label_col} not found in csv headers {csv.columns}")
 
-	print(f"Downloading {len(csv)} items...")
+	total_jobs = len(csv)
+	print(f"Downloading {total_jobs} items...")
 
 	errors = []
-	# now make the processes
 	dest = os.path.join(destination_directory, filename) if destination_directory else filename
-	downloader = MultiprocessDownload(directory=dest, num_processes=num_processes)
 
 	# try/catch for keyboard interrupt
 	try:
 		# iterate over the rows and add to our download processing job!
-		num_jobs = 0
-		for i, row in enumerate(csv.itertuples(index=False)):
-			# job is passed to our worker processes
-			index = i + 1
-			url = row[url_col_idx]
-			label = None
-			if label_col_idx:
-				label = row[label_col_idx]
-				label = None if pd.isnull(label) else label
-			downloader.add_job(index=index, url=url, label=label)
-			num_jobs += 1
-
-		# iterate over the results dictionary to update our progress bar and write any errors to the error csv
-		num_processed = 0
-		with tqdm(total=num_jobs) as pbar:
-			while num_processed < num_jobs:
-				# result is a DownloadJob with success filled out
-				result: DownloadJob = downloader.results.get()
-				if not result.success:
-					error_row = [result.index, result.url]
+		with tqdm(total=total_jobs) as pbar:
+			with ThreadPoolExecutor() as executor:
+				# for every image in the row, download it!
+				download_futures = {}
+				lock = Lock()
+				for i, row in enumerate(csv.itertuples(index=False)):
+					# job is passed to our worker processes
+					index = i + 1
+					url = row[url_col_idx]
+					label = None
 					if label_col_idx:
-						error_row.append(result.label)
-					errors.append(error_row)
-				# update progress
-				pbar.update(1)
-				num_processed += 1
-				if progress_hook:
-					progress_hook(num_processed, num_jobs)
+						label = row[label_col_idx]
+						label = None if pd.isnull(label) else label
+					download_futures[
+						executor.submit(download_image, url=url, directory=dest, lock=lock, label=label)
+					] = (index, url, label)
+
+
+				# iterate over the results to update our progress bar and write any errors to the error csv
+				num_processed = 0
+				for future in as_completed(download_futures):
+					index, url, label = download_futures[future]
+					filename = future.result()
+					if not filename:
+						error_row = [index, url]
+						if label_col_idx:
+							error_row.append(label)
+						errors.append(error_row)
+					# update progress
+					pbar.update(1)
+					num_processed += 1
+					if progress_hook:
+						progress_hook(num_processed, total_jobs)
 
 		print('Cleaning up...')
 		# write out the error csv
@@ -100,9 +105,6 @@ def create_dataset(filepath, url_col=None, label_col=None, num_processes=os.cpu_
 
 	except Exception:
 		raise
-	finally:
-		# terminate the processes, we are done
-		downloader.stop()
 
 
 def _name_and_extension(filepath):

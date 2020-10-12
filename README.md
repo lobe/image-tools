@@ -41,10 +41,11 @@ and create and output csv with the label and confidence as the last two columns.
   
   
 ### Flickr
-Download images from Flickr by latitude and longitude bounding box location and any desired tags.
+Download images from Flickr by latitude and longitude bounding box location and any desired search terms.
 ```bash
 python -m dataset.download_from_flickr api_key dest_folder --bbox min_lat,min_long,max_lat,max_long --search searchTerm
 ```
+This will create an `images.csv` file in your destination folder that includes the EXIF data for the downloaded photos.
   
   
 ## Desktop Application

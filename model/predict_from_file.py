@@ -11,6 +11,7 @@ from csv import writer as csv_writer
 from tqdm import tqdm
 from model.model import ImageClassification
 from PIL import Image
+from concurrent.futures import ThreadPoolExecutor
 
 
 def predict_dataset(filepath, model_dir, url_col=None, progress_hook=None):
@@ -45,8 +46,10 @@ def predict_dataset(filepath, model_dir, url_col=None, progress_hook=None):
 	print(f"Predicting {num_items} items...")
 
 	# load the model
+	print("Loading model...")
 	model = ImageClassification(model_dir=model_dir)
 	model.load()
+	print("Model loaded!")
 
 	# create our output csv
 	fname, ext = os.path.splitext(filepath)
@@ -57,24 +60,37 @@ def predict_dataset(filepath, model_dir, url_col=None, progress_hook=None):
 		writer.writerow([*[str(col) if not pd.isna(col) else '' for col in csv.columns], 'label', 'confidence'])
 
 	# iterate over the rows and predict the label
-	for i, row in tqdm(enumerate(csv.itertuples(index=False)), total=len(csv)):
-		url = row[url_col_idx]
-		try:
-			response = requests.get(url, timeout=30)
-			if response.ok:
-				image = Image.open(BytesIO(response.content))
-				predictions = model.predict(image)
-				predictions.sort(key=lambda x: x[1], reverse=True)
-				label, confidence = predictions[0]
-			else:
-				label, confidence = '', ''
-		except:
-			label, confidence = '', ''
-		with open(out_file, 'a', encoding="utf-8", newline='') as f:
-			writer = csv_writer(f)
-			writer.writerow([*[str(col) if not pd.isna(col) else '' for col in row], label, confidence])
-		if progress_hook:
-			progress_hook(i+1, len(csv))
+	with tqdm(total=len(csv)) as pbar:
+		with ThreadPoolExecutor() as executor:
+			model_futures = []
+			# make our prediction jobs
+			for i, row in enumerate(csv.itertuples(index=False)):
+				url = row[url_col_idx]
+				model_futures.append(executor.submit(predict_image, url=url, model=model, row=row))
+
+			# write the results from the predict (this should go in order of the futures)
+			for future in model_futures:
+				label, confidence, row = future.result()
+				with open(out_file, 'a', encoding="utf-8", newline='') as f:
+					writer = csv_writer(f)
+					writer.writerow([*[str(col) if not pd.isna(col) else '' for col in row], label, confidence])
+				pbar.update(1)
+				if progress_hook:
+					progress_hook(i+1, len(csv))
+
+
+def predict_image(url, model, row):
+	label, confidence = '', ''
+	try:
+		response = requests.get(url, timeout=30)
+		if response.ok:
+			image = Image.open(BytesIO(response.content))
+			predictions = model.predict(image)
+			predictions.sort(key=lambda x: x[1], reverse=True)
+			label, confidence = predictions[0]
+	except Exception:
+		pass
+	return label, confidence, row
 
 
 def _name_and_extension(filepath):
