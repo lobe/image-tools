@@ -20,7 +20,6 @@ def create_dataset(filepath, url_col=None, label_col=None, progress_hook=None, d
 	:param filepath: path to a valid txt or csv file with image urls to download.
 	:param url_col: if this is a csv, the column header name for the urls to download.
 	:param label_col: if this is a csv, the column header name for the labels of the images.
-	:param num_processes: the number of processes to use for the multiprocessing pool.
 	:param progress_hook: an optional function that will be run with progress_hook(currentProgress, totalProgress) when progress updates.
 	:param destination_directory: an optional directory path to download the dataset to.
 	"""

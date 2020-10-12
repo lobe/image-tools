@@ -145,7 +145,6 @@ class Dataset(QFrame):
 			create_dataset(
 				filepath=self.file, url_col=url_col, label_col=label_col if label_col else None,
 				progress_hook=self.progress_hook, destination_directory=destination_directory,
-				num_processes=max((os.cpu_count() - 1), 1)
 			)
 		except Exception as e:
 			QMessageBox.about(self, "Alert", f"Error creating dataset: {e}")

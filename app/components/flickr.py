@@ -129,7 +129,6 @@ class Flickr(QFrame):
 				max_long=self.max_long_textbox.text() or None,
 				search=self.search_textbox.text() or None,
 				progress_hook=self.progress_hook,
-				num_processes=max((os.cpu_count() - 1), 1)
 			)
 		except Exception as e:
 			QMessageBox.about(self, "Alert", f"Error creating dataset: {e}")
