@@ -5,7 +5,7 @@ import argparse
 import os
 import csv
 import xml.etree.ElementTree as ET
-from typing import Optional, Dict
+from typing import Optional, Tuple
 import requests
 from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -114,7 +114,7 @@ def download_flickr(
 							executor.submit(
 								write_photo_csv,
 								directory=directory, base_url=base_url, api_key=api_key, img_filename=filename,
-								url=url, photo_id=photo_id, secret=secret, lock=csv_lock
+								url=url, photo_id=photo_id, lock=csv_lock
 							)
 						)
 
@@ -156,49 +156,42 @@ def images_from_search(page_index, base_url, search_params):
 	return []
 
 
-def get_photo_exif(url, api_key, photo_id, secret) -> Optional[Dict[str, str]]:
+def get_photo_location(url, api_key, photo_id) -> Tuple[Optional[float], Optional[float], Optional[float]]:
 	"""
-	Given the url and photo details, return a list of tuples of exif data (Key, Value)
+	Given the url and photo details, return the latitude, longitude, and accuracy
 	"""
 	exif_params = {
 		'api_key': api_key,
-		'method': 'flickr.photos.getExif',
+		'method': 'flickr.photos.geo.getLocation',
 		'photo_id': photo_id,
-		'secret': secret,
 	}
 	response = requests.get(url=url, params=exif_params)
-	exif = {}
 	try:
 		if response.ok:
 			root = ET.fromstring(response.content)
 			photo = root.find('photo')
-			# just get GPS
-			for exif_entry in photo:
-				if exif_entry.get('tagspace') == 'GPS':
-					label = str(exif_entry.get('label')).lower()
-					if label in ['gps latitude', 'latitude']:
-						exif['latitude'] = exif_entry.find('clean').text
-					if label in ['gps longitude', 'longitude']:
-						exif['longitude'] = exif_entry.find('clean').text
+			location = photo.find('location')
+			latitude = location.get('latitude')
+			longitude = location.get('longitude')
+			accuracy = location.get('accuracy')
+			return latitude, longitude, accuracy
 	except Exception:
 		pass
-	return exif
+	return None, None, None
 
 
-def write_photo_csv(directory, base_url, api_key, img_filename, url, photo_id, secret, lock):
+def write_photo_csv(directory, base_url, api_key, img_filename, url, photo_id, lock):
 	out_file = os.path.join(directory, 'images.csv')
-	exif = get_photo_exif(
-		url=base_url, api_key=api_key, photo_id=photo_id, secret=secret
-	)
+	latitude, longitude, accuracy = get_photo_location(url=base_url, api_key=api_key, photo_id=photo_id)
 	with lock:
 		make_header = not os.path.isfile(out_file)
 		with open(out_file, 'a', newline='') as f:
 			writer = csv.writer(f)
 			# make this header if not a file already
 			if make_header:
-				writer.writerow(['File', 'URL', 'Latitude', 'Longitude'])
+				writer.writerow(['File', 'URL', 'Latitude', 'Longitude', 'Geo Accuracy'])
 			# write to csv the filename, url, gps data
-			writer.writerow([img_filename, url, exif.get('latitude'), exif.get('longitude')])
+			writer.writerow([img_filename, url, latitude, longitude, accuracy])
 
 
 if __name__ == '__main__':
