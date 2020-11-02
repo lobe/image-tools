@@ -9,10 +9,13 @@ import sqlite3
 from shutil import copyfile
 from tqdm import tqdm
 
+if platform == 'darwin':
+    PROJECTS_DIR_MAC = '~/Library/Application Support/lobe/projects'
+    PROJECTS_DIR = os.path.realpath(os.path.expanduser(PROJECTS_DIR_MAC))
+else:
+    PROJECTS_DIR_WINDOWS = os.path.join(os.getenv('APPDATA'), 'lobe', 'projects')
+    PROJECTS_DIR = os.path.realpath(PROJECTS_DIR_WINDOWS)
 
-PROJECTS_DIR_WINDOWS = os.path.join(os.getenv('APPDATA'), 'lobe', 'projects')
-PROJECTS_DIR_MAC = '~/Library/Application Support/lobe/projects'
-PROJECTS_DIR = os.path.realpath(PROJECTS_DIR_MAC) if platform == 'darwin' else os.path.realpath(PROJECTS_DIR_WINDOWS)
 PROJECT_JSON_FILE = 'project.json'
 PROJECT_ID_KEY = 'id'
 PROJECT_META_KEY = 'meta'
