@@ -160,13 +160,13 @@ def get_photo_location(url, api_key, photo_id) -> Tuple[Optional[float], Optiona
 	"""
 	Given the url and photo details, return the latitude, longitude, and accuracy
 	"""
-	exif_params = {
-		'api_key': api_key,
-		'method': 'flickr.photos.geo.getLocation',
-		'photo_id': photo_id,
-	}
-	response = requests.get(url=url, params=exif_params)
 	try:
+		exif_params = {
+			'api_key': api_key,
+			'method': 'flickr.photos.geo.getLocation',
+			'photo_id': photo_id,
+		}
+		response = requests.get(url=url, params=exif_params)
 		if response.ok:
 			root = ET.fromstring(response.content)
 			photo = root.find('photo')
@@ -184,14 +184,14 @@ def get_photo_info(url, api_key, photo_id, secret) -> Tuple[Optional[str], Optio
 	"""
 	Given the url and photo details, return the user id, title, description, and date taken for the photo
 	"""
-	info_params = {
-		'api_key': api_key,
-		'method': 'flickr.photos.getInfo',
-		'photo_id': photo_id,
-		'secret': secret,
-	}
-	response = requests.get(url=url, params=info_params)
 	try:
+		info_params = {
+			'api_key': api_key,
+			'method': 'flickr.photos.getInfo',
+			'photo_id': photo_id,
+			'secret': secret,
+		}
+		response = requests.get(url=url, params=info_params)
 		if response.ok:
 			root = ET.fromstring(response.content)
 			photo = root.find('photo')
@@ -212,13 +212,17 @@ def write_photo_csv(directory, base_url, api_key, img_filename, url, photo_id, s
 	user_id, title, date_taken = get_photo_info(url=base_url, api_key=api_key, photo_id=photo_id, secret=secret)
 	with lock:
 		make_header = not os.path.isfile(out_file)
-		with open(out_file, 'a', newline='') as f:
+		with open(out_file, 'a', newline='', encoding='utf-8') as f:
 			writer = csv.writer(f)
 			# make this header if not a file already
 			if make_header:
 				writer.writerow(['File', 'URL', 'User ID', 'Title', 'Date Taken', 'Latitude', 'Longitude', 'Geo Accuracy'])
 			# write to csv the filename, url, gps data
-			writer.writerow([img_filename, url, user_id, title, date_taken, latitude, longitude, accuracy])
+			try:
+				writer.writerow([img_filename, url, user_id, title, date_taken, latitude, longitude, accuracy])
+			except Exception as e:
+				# probably has exception on title -- make that None (from non-encodable character)
+				writer.writerow([img_filename, url, user_id, None, date_taken, latitude, longitude, accuracy])
 
 
 if __name__ == '__main__':
