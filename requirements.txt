@@ -6,3 +6,4 @@ pyinstaller>=4.0
 tensorflow==1.15.4
 PyQT5==5.15.1
 pillow==8.0.1
+numpy==1.18.5  # tensorflow needed numpy < 1.19

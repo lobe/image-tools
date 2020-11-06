@@ -9,6 +9,10 @@ Install the required packages.
 ```bash
 pip install -r requirements.txt
 ```
+If you are on Windows, you will also need to install the latest PyInstaller from GitHub:
+```bash
+pip install git+https://github.com/pyinstaller/pyinstaller.git
+```
 
 ## Usage
 ### CSV, XLSX, or TXT files
