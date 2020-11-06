@@ -61,7 +61,7 @@ exported folder and drag it directly to a new project in Lobe.
 You can create a desktop GUI application using PyInstaller:
 
 ```bash
-python -m PyInstaller app/app.spec
+pyinstaller --onefile app/app.spec
 ```
 
 This will create a `dist/` folder that will contain the application executable `Image Tools.exe`

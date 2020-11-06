@@ -1,8 +1,9 @@
 # -*- mode: python ; coding: utf-8 -*-
+import sys
+import os
 
 block_cipher = None
 
-import os
 spec_path = os.path.realpath(SPECPATH)
 
 # fix for tensorflow >=1.15 from https://github.com/pyinstaller/pyinstaller/issues/4400
@@ -28,8 +29,11 @@ pyz = PYZ(a.pure, a.zipped_data,
              cipher=block_cipher)
 exe = EXE(pyz,
           a.scripts,
+          a.binaries,
+          a.zipfiles,
+          a.datas,
           [],
-          exclude_binaries=True,
+          # exclude_binaries=True,
           name='Image Tools',
           debug=False,
           bootloader_ignore_signals=False,
@@ -37,11 +41,9 @@ exe = EXE(pyz,
           upx=True,
           console=False,
           icon='assets/icon.ico')
-coll = COLLECT(exe,
-               a.binaries,
-               a.zipfiles,
-               a.datas,
-               strip=False,
-               upx=True,
-               upx_exclude=[],
-               name='Image Tools')
+
+# Build a .app if on OS X
+if sys.platform == 'darwin':
+   app = BUNDLE(exe,
+                name='Image Tools.app',
+                icon='assets/icon.ico')

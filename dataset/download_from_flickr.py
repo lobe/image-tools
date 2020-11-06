@@ -97,8 +97,8 @@ def download_flickr(
 							if progress_hook:
 								progress_hook(num_processed, total_jobs)
 
-					# now for all of our downloaded images, write the csv with exif if we can
-					exif_futures = []
+					# now for all of our downloaded images, write the csv with info if we can
+					info_futures = []
 					for future in as_completed(download_futures):
 						photo_id, secret, url = download_futures[future]
 						filename = future.result()
@@ -110,16 +110,16 @@ def download_flickr(
 							pbar.refresh()
 							if progress_hook:
 								progress_hook(num_processed, total_jobs)
-						exif_futures.append(
+						info_futures.append(
 							executor.submit(
 								write_photo_csv,
 								directory=directory, base_url=base_url, api_key=api_key, img_filename=filename,
-								url=url, photo_id=photo_id, lock=csv_lock
+								url=url, photo_id=photo_id, secret=secret, lock=csv_lock
 							)
 						)
 
 					# wait for all our final csv jobs to finish
-					for _ in as_completed(exif_futures):
+					for _ in as_completed(info_futures):
 						# update our progress bar for the finished image download and csv write
 						pbar.update(1)
 						downloaded_images += 1
@@ -180,18 +180,45 @@ def get_photo_location(url, api_key, photo_id) -> Tuple[Optional[float], Optiona
 	return None, None, None
 
 
-def write_photo_csv(directory, base_url, api_key, img_filename, url, photo_id, lock):
+def get_photo_info(url, api_key, photo_id, secret) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+	"""
+	Given the url and photo details, return the user id, title, description, and date taken for the photo
+	"""
+	info_params = {
+		'api_key': api_key,
+		'method': 'flickr.photos.getInfo',
+		'photo_id': photo_id,
+		'secret': secret,
+	}
+	response = requests.get(url=url, params=info_params)
+	try:
+		if response.ok:
+			root = ET.fromstring(response.content)
+			photo = root.find('photo')
+			owner = photo.find('owner')
+			user_id = owner.get('nsid')
+			title = photo.find('title').text
+			dates = photo.find('dates')
+			date_taken = dates.get('taken')
+			return user_id, title, date_taken
+	except Exception:
+		pass
+	return None, None, None
+
+
+def write_photo_csv(directory, base_url, api_key, img_filename, url, photo_id, secret, lock):
 	out_file = os.path.join(directory, 'images.csv')
 	latitude, longitude, accuracy = get_photo_location(url=base_url, api_key=api_key, photo_id=photo_id)
+	user_id, title, date_taken = get_photo_info(url=base_url, api_key=api_key, photo_id=photo_id, secret=secret)
 	with lock:
 		make_header = not os.path.isfile(out_file)
 		with open(out_file, 'a', newline='') as f:
 			writer = csv.writer(f)
 			# make this header if not a file already
 			if make_header:
-				writer.writerow(['File', 'URL', 'Latitude', 'Longitude', 'Geo Accuracy'])
+				writer.writerow(['File', 'URL', 'User ID', 'Title', 'Date Taken', 'Latitude', 'Longitude', 'Geo Accuracy'])
 			# write to csv the filename, url, gps data
-			writer.writerow([img_filename, url, latitude, longitude, accuracy])
+			writer.writerow([img_filename, url, user_id, title, date_taken, latitude, longitude, accuracy])
 
 
 if __name__ == '__main__':
