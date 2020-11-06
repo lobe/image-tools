@@ -1,3 +1,4 @@
+![PyInstaller Mac](https://github.com/lobe/image-tools/workflows/PyInstaller%20Mac/badge.svg)
 # Image Tools: creating image datasets
 Image Tools helps you form machine learning datasets for image classification.
 
