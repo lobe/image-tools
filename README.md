@@ -2,7 +2,17 @@
 # Image Tools: creating image datasets
 Image Tools helps you form machine learning datasets for image classification.
 
-## Setup
+## Download the desktop application
+We use GitHub Actions to build the desktop version of this app. If you would like to download it for
+Windows or Mac, please click on [Actions](https://github.com/lobe/image-tools/actions) and then 
+you will see [PyInstaller Windows](https://github.com/lobe/image-tools/actions?query=workflow%3A%22PyInstaller+Windows%22)
+and [PyInstaller Mac](https://github.com/lobe/image-tools/actions?query=workflow%3A%22PyInstaller+Mac%22)
+on the left under 'All Workflows'. Once you click into the Windows or Mac workflow, you will see a list of the builds
+in the center of the screen. Click on the topmost item in the results list for the latest version. Once you click
+on the latest build, you should see a section titled 'Artifacts' with an item called 'Image Tools Windows' or 
+'Image Tools Mac'. When you click on this artifact, it should download the zip containing the app for you!
+
+## Code Setup
 These tools were developed with python 3.7.7
 
 Install the required packages.
@@ -14,7 +24,7 @@ If you are on Windows, you will also need to install the latest PyInstaller from
 pip install git+https://github.com/pyinstaller/pyinstaller.git
 ```
 
-## Usage
+## CLI Usage
 ### CSV, XLSX, or TXT files
 #### Downloading an image dataset from the urls in a csv or txt file:
 ```bash
@@ -62,11 +72,12 @@ Your images will be copied to the destination folder, and their labels will be t
 exported folder and drag it directly to a new project in Lobe.
 
   
-## Desktop Application
+## Build Desktop Application
 You can create a desktop GUI application using PyInstaller:
 
 ```bash
 pyinstaller --onefile app/app.spec
 ```
 
-This will create a `dist/` folder that will contain the application executable `Image Tools.exe`
+This will create a `dist/` folder that will contain the application file `Image Tools.exe` or `Image Tools.app`
+depending on your OS.
