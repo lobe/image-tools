@@ -81,3 +81,8 @@ pyinstaller --onefile app/app.spec
 
 This will create a `dist/` folder that will contain the application file `Image Tools.exe` or `Image Tools.app`
 depending on your OS.
+
+### Running the desktop application for development
+```bash
+python -m app.app
+```

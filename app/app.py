@@ -4,13 +4,12 @@ from PyQt5.QtWidgets import (
     QDesktopWidget, QFrame
 )
 import sys
-import os
 from multiprocessing import freeze_support
 from app.components.navbar import NavBar
 from app.components.dataset import Dataset
 from app.components.model import Model
 from app.components.flickr import Flickr
-from app import ASSETS_PATH
+from app import resource_path
 
 
 try:
@@ -107,7 +106,7 @@ class MainWindow(QMainWindow):
 if __name__ == '__main__':
     freeze_support()
     app = QApplication(sys.argv)
-    app.setWindowIcon(QtGui.QIcon(os.path.join(ASSETS_PATH, 'icon.ico')))
+    app.setWindowIcon(QtGui.QIcon(resource_path('icon.ico')))
 
     w = MainWindow(app)
     w.setStyleSheet(f"""

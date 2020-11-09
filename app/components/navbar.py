@@ -1,7 +1,7 @@
 import os
 from PyQt5.QtWidgets import QButtonGroup, QPushButton, QVBoxLayout, QFrame, QLabel
 from PyQt5.QtGui import QPixmap
-from app import ASSETS_PATH
+from app import resource_path
 
 
 class NavBar(QFrame):
@@ -19,7 +19,7 @@ class NavBar(QFrame):
 
 		# logo
 		label = QLabel(self)
-		pixmap = QPixmap(os.path.join(ASSETS_PATH, 'icon.ico'))
+		pixmap = QPixmap(resource_path('icon.ico'))
 		label.setPixmap(pixmap)
 		label.setScaledContents(True)
 		label.setObjectName("logo")
