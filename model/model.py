@@ -99,6 +99,9 @@ class ImageClassification(object):
 def predict_image(image, model):
     label, confidence = '', ''
     try:
+        # convert to rgb image if this isn't one
+        if image.mode != "RGB":
+            image = image.convert("RGB")
         predictions = model.predict(image)
         predictions.sort(key=lambda x: x[1], reverse=True)
         label, confidence = predictions[0]
