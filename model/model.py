@@ -82,7 +82,7 @@ class ImageClassification(object):
             results[key] = val
 
         # return our (label, confidence) pairs
-        confidences = results.get('Confidences')
+        confidences = results.get('Confidences') or results.get('Labels')  # add 'Labels' for compatibility with other Lobe verions
         if not confidences:
             print(f"Problem getting confidences. Found results: {results}, model outputs {outputs}")
         return list(zip(self.labels, confidences))
