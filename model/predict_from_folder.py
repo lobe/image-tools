@@ -44,7 +44,7 @@ def predict_folder(img_dir, model_dir, progress_hook=None):
 			# make our prediction jobs
 			for root, _, files in os.walk(img_dir):
 				for filename in files:
-					image_file = os.path.join(root, filename)
+					image_file = os.path.abspath(os.path.join(root, filename))
 					try:
 						image = Image.open(image_file)
 						model_futures.append((executor.submit(predict_image, image=image, model=model), image_file))
@@ -56,10 +56,21 @@ def predict_folder(img_dir, model_dir, progress_hook=None):
 
 			for future, img_file in model_futures:
 				label, _ = future.result()
+				filename = os.path.split(img_file)[-1]
+				name, ext = os.path.splitext(filename)
 				# move the file
 				dest_dir = os.path.join(img_dir, label)
 				os.makedirs(dest_dir, exist_ok=True)
-				shutil.move(img_file, dest_dir)
+				dest_file = os.path.abspath(os.path.join(dest_dir, filename))
+				# only move if the destination is different than the file
+				if dest_file != img_file:
+					# rename the file if there is a conflict
+					rename_idx = 0
+					while os.path.exists(dest_file):
+						new_name = f'{name}_{rename_idx}{ext}'
+						dest_file = os.path.abspath(os.path.join(dest_dir, new_name))
+						rename_idx += 1
+					shutil.move(img_file, dest_file)
 				pbar.update(1)
 				if progress_hook:
 					curr_progress += 1
