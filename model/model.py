@@ -83,6 +83,8 @@ class ImageClassification(object):
 
         # return our (label, confidence) pairs
         confidences = results.get('Confidences')
+        if not confidences:
+            print(f"Problem getting confidences. Found results: {results}")
         return list(zip(self.labels, confidences))
 
     def cleanup(self):
