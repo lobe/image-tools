@@ -9,7 +9,7 @@ import requests
 import pandas as pd
 from csv import writer as csv_writer
 from tqdm import tqdm
-from model.model import ImageClassification
+from model.model import ImageClassification, predict_image
 from PIL import Image
 from concurrent.futures import ThreadPoolExecutor
 
@@ -66,10 +66,10 @@ def predict_dataset(filepath, model_dir, url_col=None, progress_hook=None):
 			# make our prediction jobs
 			for i, row in enumerate(csv.itertuples(index=False)):
 				url = row[url_col_idx]
-				model_futures.append(executor.submit(predict_image, url=url, model=model, row=row))
+				model_futures.append(executor.submit(predict_image_url, url=url, model=model, row=row))
 
 			# write the results from the predict (this should go in order of the futures)
-			for future in model_futures:
+			for i, future in enumerate(model_futures):
 				label, confidence, row = future.result()
 				with open(out_file, 'a', encoding="utf-8", newline='') as f:
 					writer = csv_writer(f)
@@ -79,15 +79,13 @@ def predict_dataset(filepath, model_dir, url_col=None, progress_hook=None):
 					progress_hook(i+1, len(csv))
 
 
-def predict_image(url, model, row):
+def predict_image_url(url, model, row):
 	label, confidence = '', ''
 	try:
 		response = requests.get(url, timeout=30)
 		if response.ok:
 			image = Image.open(BytesIO(response.content))
-			predictions = model.predict(image)
-			predictions.sort(key=lambda x: x[1], reverse=True)
-			label, confidence = predictions[0]
+			label, confidence = predict_image(image=image, model=model)
 	except Exception:
 		pass
 	return label, confidence, row

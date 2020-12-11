@@ -94,3 +94,14 @@ class ImageClassification(object):
 
     def __del__(self):
         self.cleanup()
+
+
+def predict_image(image, model):
+    label, confidence = '', ''
+    try:
+        predictions = model.predict(image)
+        predictions.sort(key=lambda x: x[1], reverse=True)
+        label, confidence = predictions[0]
+    except Exception:
+        pass
+    return label, confidence

@@ -16,18 +16,18 @@ on the latest build, you should see a section titled 'Artifacts' with an item ca
 These tools were developed with python 3.7.7
 
 Install the required packages.
-```bash
+```shell script
 pip install -r requirements.txt
 ```
 If you are on Windows, you will also need to install the latest PyInstaller from GitHub:
-```bash
+```shell script
 pip install git+https://github.com/pyinstaller/pyinstaller.git
 ```
 
 ## CLI Usage
 ### CSV, XLSX, or TXT files
 #### Downloading an image dataset from the urls in a csv or txt file:
-```bash
+```shell script
 python -m dataset.download_from_file your_file.csv --url UrlHeader --label LabelHeader
 ```
 This downloader script takes either a csv, xlsx, or txt file and will format an image dataset for you. The resulting images 
@@ -42,7 +42,7 @@ grouped into sub-folders with the label name.
   * separate each image url by a newline
 
 #### Predicting labels and confidences for images in a csv, xlsx, or txt file:
-```bash
+```shell script
 python -m model.predict_from_file your_file.csv path/to/lobe/savedmodel --url UrlHeader
 ```
 This prediction script will take a csv or txt file with urls to images and a Lobe TensorFlow SavedModel export directory, 
@@ -54,10 +54,17 @@ and create and output csv with the label and confidence as the last two columns.
 * txt file
   * separate each image url by a newline
   
+### Folder of images
+```shell script
+python -m model.predict_from_folder path/to/images path/to/lobe/savedmodel
+```
+This prediction script will take a directory of images and a Lobe TensorFlow SavedModel export directory, 
+and reorganize those images into subdirectories by their predicted label.
+  
   
 ### Flickr downloader
 Download images from Flickr by latitude and longitude bounding box location and any desired search terms.
-```bash
+```shell script
 python -m dataset.download_from_flickr api_key dest_folder --bbox min_lat,min_long,max_lat,max_long --search searchTerm
 ```
 This will create an `images.csv` file in your destination folder that includes the EXIF data for the downloaded photos.
@@ -65,7 +72,7 @@ This will create an `images.csv` file in your destination folder that includes t
   
 ### Export Lobe dataset
 Export your project's dataset by giving the project name and desired export directory:
-```bash
+```shell script
 python dataset/export_from_lobe.py 'Project Name' destination/export/folder
 ```
 Your images will be copied to the destination folder, and their labels will be the subfolder name. You can take this
@@ -75,7 +82,7 @@ exported folder and drag it directly to a new project in Lobe.
 ## Build Desktop Application
 You can create a desktop GUI application using PyInstaller:
 
-```bash
+```shell script
 pyinstaller --onefile app/app.spec
 ```
 
@@ -83,6 +90,6 @@ This will create a `dist/` folder that will contain the application file `Image 
 depending on your OS.
 
 ### Running the desktop application for development
-```bash
+```shell script
 python -m app.app
 ```
