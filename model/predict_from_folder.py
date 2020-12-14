@@ -48,14 +48,18 @@ def predict_folder(img_dir, model_dir, progress_hook=None):
 					try:
 						image = Image.open(image_file)
 						model_futures.append((executor.submit(predict_image, image=image, model=model), image_file))
-					except Exception:
+					except Exception as e:
+						print(f"Couldn't open image file: {e}")
 						pbar.update(1)
 						if progress_hook:
 							curr_progress += 1
 							progress_hook(curr_progress, num_items)
 
+			no_labels = 0
 			for future, img_file in model_futures:
 				label, _ = future.result()
+				if label == '':
+					no_labels += 1
 				filename = os.path.split(img_file)[-1]
 				name, ext = os.path.splitext(filename)
 				# move the file
@@ -64,17 +68,21 @@ def predict_folder(img_dir, model_dir, progress_hook=None):
 				dest_file = os.path.abspath(os.path.join(dest_dir, filename))
 				# only move if the destination is different than the file
 				if dest_file != img_file:
-					# rename the file if there is a conflict
-					rename_idx = 0
-					while os.path.exists(dest_file):
-						new_name = f'{name}_{rename_idx}{ext}'
-						dest_file = os.path.abspath(os.path.join(dest_dir, new_name))
-						rename_idx += 1
-					shutil.move(img_file, dest_file)
+					try:
+						# rename the file if there is a conflict
+						rename_idx = 0
+						while os.path.exists(dest_file):
+							new_name = f'{name}_{rename_idx}{ext}'
+							dest_file = os.path.abspath(os.path.join(dest_dir, new_name))
+							rename_idx += 1
+						shutil.move(img_file, dest_file)
+					except Exception as e:
+						print(f"Problem moving file: {e}")
 				pbar.update(1)
 				if progress_hook:
 					curr_progress += 1
 					progress_hook(curr_progress, num_items)
+			print(f"Done! Number without labels: {no_labels}")
 
 
 if __name__ == '__main__':
