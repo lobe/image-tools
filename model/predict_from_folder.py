@@ -45,15 +45,9 @@ def predict_folder(img_dir, model_dir, progress_hook=None):
 			for root, _, files in os.walk(img_dir):
 				for filename in files:
 					image_file = os.path.abspath(os.path.join(root, filename))
-					try:
-						image = Image.open(image_file)
-						model_futures.append((executor.submit(predict_image, image=image, model=model), image_file))
-					except Exception as e:
-						print(f"Couldn't open image file: {e}")
-						pbar.update(1)
-						if progress_hook:
-							curr_progress += 1
-							progress_hook(curr_progress, num_items)
+					model_futures.append(
+						(executor.submit(predict_image_from_file, image_file=image_file, model=model), image_file)
+					)
 
 			no_labels = 0
 			for future, img_file in model_futures:
@@ -82,7 +76,17 @@ def predict_folder(img_dir, model_dir, progress_hook=None):
 				if progress_hook:
 					curr_progress += 1
 					progress_hook(curr_progress, num_items)
-			print(f"Done! Number without labels: {no_labels}")
+			print(f"Done! Number of images without predicted labels: {no_labels}")
+
+
+def predict_image_from_file(image_file, model):
+	label, confidence = '', ''
+	try:
+		image = Image.open(image_file)
+		label, confidence = predict_image(image=image, model=model)
+	except Exception as e:
+		print(f"Problem predicting image from file: {e}")
+	return label, confidence
 
 
 if __name__ == '__main__':
