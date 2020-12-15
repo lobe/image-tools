@@ -38,6 +38,7 @@ def predict_folder(img_dir, model_dir, progress_hook=None):
 
 	# iterate over the rows and predict the label
 	curr_progress = 0
+	no_labels = 0
 	with tqdm(total=num_items) as pbar:
 		with ThreadPoolExecutor() as executor:
 			model_futures = []
@@ -49,7 +50,6 @@ def predict_folder(img_dir, model_dir, progress_hook=None):
 						(executor.submit(predict_image_from_file, image_file=image_file, model=model), image_file)
 					)
 
-			no_labels = 0
 			for future, img_file in model_futures:
 				label, _ = future.result()
 				if label == '':
@@ -76,7 +76,7 @@ def predict_folder(img_dir, model_dir, progress_hook=None):
 				if progress_hook:
 					curr_progress += 1
 					progress_hook(curr_progress, num_items)
-			print(f"Done! Number of images without predicted labels: {no_labels}")
+	print(f"Done! Number of images without predicted labels: {no_labels}")
 
 
 def predict_image_from_file(image_file, model):
