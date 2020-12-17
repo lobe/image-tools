@@ -6,9 +6,9 @@ import argparse
 import os
 import shutil
 from tqdm import tqdm
-from model.model import ImageClassification, predict_image
-from PIL import Image
+from lobe import ImageModel
 from concurrent.futures import ThreadPoolExecutor
+from threading import Lock
 
 
 def predict_folder(img_dir, model_dir, progress_hook=None):
@@ -32,8 +32,7 @@ def predict_folder(img_dir, model_dir, progress_hook=None):
 
 	# load the model
 	print("Loading model...")
-	model = ImageClassification(model_dir=model_dir)
-	model.load()
+	model = ImageModel.load(model_path=model_dir)
 	print("Model loaded!")
 
 	# iterate over the rows and predict the label
@@ -42,16 +41,17 @@ def predict_folder(img_dir, model_dir, progress_hook=None):
 	with tqdm(total=num_items) as pbar:
 		with ThreadPoolExecutor() as executor:
 			model_futures = []
+			lock = Lock()
 			# make our prediction jobs
 			for root, _, files in os.walk(img_dir):
 				for filename in files:
 					image_file = os.path.abspath(os.path.join(root, filename))
 					model_futures.append(
-						(executor.submit(predict_image_from_file, image_file=image_file, model=model), image_file)
+						(executor.submit(predict_label_from_image_file, image_file=image_file, model=model, lock=lock), image_file)
 					)
 
 			for future, img_file in model_futures:
-				label, _ = future.result()
+				label = future.result()
 				if label == '':
 					no_labels += 1
 				filename = os.path.split(img_file)[-1]
@@ -79,14 +79,15 @@ def predict_folder(img_dir, model_dir, progress_hook=None):
 	print(f"Done! Number of images without predicted labels: {no_labels}")
 
 
-def predict_image_from_file(image_file, model):
-	label, confidence = '', ''
+def predict_label_from_image_file(image_file, model: ImageModel, lock: Lock):
+	label = ''
 	try:
-		image = Image.open(image_file)
-		label, confidence = predict_image(image=image, model=model)
+		with lock:
+			result = model.predict_from_file(path=image_file)
+			return result.prediction
 	except Exception as e:
 		print(f"Problem predicting image from file: {e}")
-	return label, confidence
+	return label
 
 
 if __name__ == '__main__':
