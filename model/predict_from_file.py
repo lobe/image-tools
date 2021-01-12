@@ -4,13 +4,10 @@ and write the predicted label and confidence back to the file
 """
 import argparse
 import os
-from io import BytesIO
-import requests
 import pandas as pd
 from csv import writer as csv_writer
 from tqdm import tqdm
-from model.model import ImageClassification, predict_image
-from PIL import Image
+from lobe import ImageModel
 from concurrent.futures import ThreadPoolExecutor
 
 
@@ -47,8 +44,7 @@ def predict_dataset(filepath, model_dir, url_col=None, progress_hook=None):
 
 	# load the model
 	print("Loading model...")
-	model = ImageClassification(model_dir=model_dir)
-	model.load()
+	model = ImageModel.load(model_path=model_dir)
 	print("Model loaded!")
 
 	# create our output csv
@@ -79,15 +75,13 @@ def predict_dataset(filepath, model_dir, url_col=None, progress_hook=None):
 					progress_hook(i+1, len(csv))
 
 
-def predict_image_url(url, model, row):
+def predict_image_url(url, model: ImageModel, row):
 	label, confidence = '', ''
 	try:
-		response = requests.get(url, timeout=30)
-		if response.ok:
-			image = Image.open(BytesIO(response.content))
-			label, confidence = predict_image(image=image, model=model)
-	except Exception:
-		pass
+		result = model.predict_from_url(url=url)
+		label, confidence = result.labels[0]
+	except Exception as e:
+		print(f"Problem predicting image from url: {e}")
 	return label, confidence, row
 
 

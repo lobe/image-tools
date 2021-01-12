@@ -1,9 +1,7 @@
-pandas==1.1.4
-xlrd==1.2.0
-tqdm==4.51.0
-requests==2.24.0
-pyinstaller>=4.0
-tensorflow==1.15.4
-PyQT5==5.15.1
+pandas==1.1.5
+tqdm==4.54.1
+requests==2.25.1
+pyinstaller==4.1
+PyQT5==5.15.2
 pillow==8.0.1
-numpy==1.18.5  # tensorflow needed numpy < 1.19
+git+git://github.com/lobe/lobe-python#egg=lobe
