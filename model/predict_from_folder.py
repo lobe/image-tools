@@ -8,7 +8,6 @@ import shutil
 from tqdm import tqdm
 from lobe import ImageModel
 from concurrent.futures import ThreadPoolExecutor
-from threading import Lock
 
 
 def predict_folder(img_dir, model_dir, progress_hook=None):
@@ -41,13 +40,12 @@ def predict_folder(img_dir, model_dir, progress_hook=None):
 	with tqdm(total=num_items) as pbar:
 		with ThreadPoolExecutor() as executor:
 			model_futures = []
-			lock = Lock()
 			# make our prediction jobs
 			for root, _, files in os.walk(img_dir):
 				for filename in files:
 					image_file = os.path.abspath(os.path.join(root, filename))
 					model_futures.append(
-						(executor.submit(predict_label_from_image_file, image_file=image_file, model=model, lock=lock), image_file)
+						(executor.submit(predict_label_from_image_file, image_file=image_file, model=model), image_file)
 					)
 
 			for future, img_file in model_futures:
@@ -79,12 +77,11 @@ def predict_folder(img_dir, model_dir, progress_hook=None):
 	print(f"Done! Number of images without predicted labels: {no_labels}")
 
 
-def predict_label_from_image_file(image_file, model: ImageModel, lock: Lock):
+def predict_label_from_image_file(image_file, model: ImageModel):
 	label = ''
 	try:
-		with lock:
-			result = model.predict_from_file(path=image_file)
-			return result.prediction
+		result = model.predict_from_file(path=image_file)
+		return result.prediction
 	except Exception as e:
 		print(f"Problem predicting image from file: {e}")
 	return label
