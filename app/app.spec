@@ -6,18 +6,15 @@ block_cipher = None
 
 spec_path = os.path.realpath(SPECPATH)
 
-# fix for tensorflow >=1.15 from https://github.com/pyinstaller/pyinstaller/issues/4400
-from PyInstaller.utils.hooks import collect_submodules, collect_data_files, collect_all
-tf_hidden_imports = collect_submodules('tensorflow_core')
-tf_datas = collect_data_files('tensorflow_core', subdir=None, include_py_files=True)
+from PyInstaller.utils.hooks import collect_all
 astor_datas, _, astor_hidden_imports = collect_all("astor")
 
 
 a = Analysis(['app.py'],
              pathex=[os.path.join(spec_path, '..')],
              binaries=[],
-             datas=tf_datas + astor_datas + [('assets/icon.ico', '.')],
-             hiddenimports=tf_hidden_imports + astor_hidden_imports,
+             datas=astor_datas + [('assets/icon.ico', '.')],
+             hiddenimports=astor_hidden_imports,
              hookspath=[],
              runtime_hooks=[],
              excludes=[],
