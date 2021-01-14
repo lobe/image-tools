@@ -6,15 +6,12 @@ block_cipher = None
 
 spec_path = os.path.realpath(SPECPATH)
 
-from PyInstaller.utils.hooks import collect_all
-astor_datas, _, astor_hidden_imports = collect_all("astor")
-
 
 a = Analysis(['app.py'],
              pathex=[os.path.join(spec_path, '..')],
              binaries=[],
-             datas=astor_datas + [('assets/icon.ico', '.')],
-             hiddenimports=astor_hidden_imports,
+             datas=[('assets/icon.ico', '.')],
+             hiddenimports=[],
              hookspath=[],
              runtime_hooks=[],
              excludes=[],
