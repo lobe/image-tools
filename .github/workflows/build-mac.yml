@@ -22,8 +22,8 @@ jobs:
         pip install -r requirements.txt
     - name: Build with PyInstaller
       run: |
-        pyinstaller --onefile app/app.spec
-    - name: Upload exe
+        pyinstaller --onefile --windowed app/app.spec
+    - name: Upload app
       uses: actions/upload-artifact@v2
       with:
         name: Image Tools Mac

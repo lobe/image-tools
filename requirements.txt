@@ -1,7 +1,7 @@
-pandas==1.2.0
+pandas==1.2.1
 tqdm==4.56.0
 requests==2.25.1
 pyinstaller==4.2
 PyQT5==5.15.2
 pillow==8.1.0
-git+git://github.com/lobe/lobe-python#egg=lobe
+lobe==0.3.0

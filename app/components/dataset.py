@@ -31,7 +31,7 @@ class Dataset(QFrame):
 		# some info
 		title = QLabel("Dataset")
 		title.setObjectName("h1")
-		description = QLabel("Download images from URLs in a .csv or .xlsx file.\nOptionally, supply labels to organize your images into folders by label.")
+		description = QLabel("Download images from URLs in a .csv, .xlsx, or .txt file.\nOptionally, supply labels to organize your images into folders by label.")
 		description.setObjectName("h2")
 
 		# file selection button
