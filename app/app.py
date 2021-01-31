@@ -4,11 +4,13 @@ from PyQt5.QtWidgets import (
     QDesktopWidget, QFrame
 )
 import sys
+from collections import OrderedDict
 from multiprocessing import freeze_support
 from app.components.navbar import NavBar
 from app.components.dataset import Dataset
 from app.components.model import Model
 from app.components.flickr import Flickr
+from app.components.export import Export
 from app import resource_path
 
 
@@ -40,13 +42,21 @@ TEXT_MEDIUM = "rgb(70,70,70)"
 TEXT_LIGHT = "rgb(182,182,182)"
 
 
+class Tabs:
+    DATASET = 'Dataset'
+    MODEL = 'Model'
+    FLICKR = 'Flickr'
+    EXPORT = 'Export'
+
+
 class MainWindow(QMainWindow):
 
     def __init__(self, app, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # initialize our variables
         self.app = app
-        self.nav = "Dataset"
+        self.nav = None
+        self.pages = OrderedDict()
         self.init_ui()
 
     def init_ui(self):
@@ -58,18 +68,20 @@ class MainWindow(QMainWindow):
         # our main app consists of two sections -- nav on left and content on right
         app_layout = QHBoxLayout()
 
-        navbar = NavBar(self.nav_click)
-        self.dataset = Dataset(self.app)
-        self.model = Model(self.app)
-        self.flickr = Flickr(self.app)
-        # we are on dataset tab by default
-        self.model.hide()
-        self.flickr.hide()
+        self.pages = OrderedDict([
+            (Tabs.DATASET, Dataset(self.app)),
+            (Tabs.MODEL, Model(self.app)),
+            (Tabs.EXPORT, Export(self.app)),
+            (Tabs.FLICKR, Flickr(self.app)),
+        ])
+
+        navbar = NavBar(self.nav_click, list(self.pages.keys()))
+        # we are on the first page by default
+        self.nav_click(list(self.pages.keys())[0])
 
         app_layout.addWidget(navbar)
-        app_layout.addWidget(self.dataset)
-        app_layout.addWidget(self.model)
-        app_layout.addWidget(self.flickr)
+        for page in self.pages.values():
+            app_layout.addWidget(page)
         app_layout.setContentsMargins(0, 0, 0, 0)
         app_layout.setSpacing(0)
 
@@ -88,18 +100,8 @@ class MainWindow(QMainWindow):
 
     def nav_click(self, button: str):
         if button != self.nav:
-            if button == "Dataset":
-                self.model.hide()
-                self.dataset.show()
-                self.flickr.hide()
-            elif button == "Model":
-                self.dataset.hide()
-                self.model.show()
-                self.flickr.hide()
-            elif button == "Flickr":
-                self.flickr.show()
-                self.dataset.hide()
-                self.model.hide()
+            for name, page in self.pages.items():
+                page.show() if button == name else page.hide()
             self.nav = button
 
 

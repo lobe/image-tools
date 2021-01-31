@@ -4,11 +4,12 @@ from PyQt5.QtWidgets import (QPushButton, QVBoxLayout, QHBoxLayout, QFrame, QLab
 from app.components.stretch_wrapper import NoStretch
 import pandas as pd
 from model.predict_from_file import predict_dataset
+from model.predict_from_folder import predict_folder
 
 
 class Model(QFrame):
 	default_model_text = "<i>Please select a TensorFlow model directory.<\i>"
-	default_file_text = "<i>Please select a file.<\i>"
+	default_file_text = "<i>Please select a folder of images or a csv of URLs.<\i>"
 	predict_text = "Predict"
 	predicting_text = "Predicting..."
 
@@ -18,6 +19,7 @@ class Model(QFrame):
 		self.app = app
 		self.tf_directory = None
 		self.file = None
+		self.folder = None
 		self.init_ui()
 
 	def init_ui(self):
@@ -33,7 +35,8 @@ class Model(QFrame):
 		# some info
 		title = QLabel("Model")
 		title.setObjectName("h1")
-		description = QLabel("Run your exported TensorFlow model from Lobe \non a .csv or .xlsx of image URLs.\nThis will produce a new .csv with the original URLs, \nthe model's prediction, and the model's confidence.")
+		description = QLabel(
+			"Run your exported TensorFlow model from Lobe \non a folder of images or a .csv/.xlsx file of image URLs.\nThis will produce a new prediction .csv with the image filepath or URL, \nthe model's prediction, and the model's confidence.")
 		description.setObjectName("h2")
 
 		# model select button
@@ -43,11 +46,13 @@ class Model(QFrame):
 		model_container.setObjectName("separate")
 		self.model_label = QLabel(self.default_model_text)
 
-		# file selection button
+		# file or folder selection button
+		self.folder_button = QPushButton("Select folder")
+		self.folder_button.clicked.connect(self.select_image_folder)
 		self.file_button = QPushButton("Select file")
 		self.file_button.clicked.connect(self.select_file)
-		button_container = NoStretch(self.file_button)
-		button_container.setObjectName("separate")
+		buttons_container = NoStretch([self.folder_button, self.file_button])
+		buttons_container.setObjectName("separate")
 		self.path_label = QLabel(self.default_file_text)
 
 		# url column header
@@ -75,7 +80,7 @@ class Model(QFrame):
 		content_layout.addWidget(description)
 		content_layout.addWidget(model_container)
 		content_layout.addWidget(self.model_label)
-		content_layout.addWidget(button_container)
+		content_layout.addWidget(buttons_container)
 		content_layout.addWidget(self.path_label)
 		content_layout.addWidget(self.url_label)
 		content_layout.addWidget(self.url_container)
@@ -96,12 +101,20 @@ class Model(QFrame):
 	def select_file(self):
 		self.file = QFileDialog.getOpenFileName(self, 'Select CSV File', filter="CSV (*.csv *.xlsx)")[0]
 		self.path_label.setText(f"<i>{self.file}</i>" if self.file else self.default_file_text)
+		self.folder = None
+		self.parse_headers()
+		self.check_predict_button()
+
+	def select_image_folder(self):
+		self.folder = QFileDialog.getExistingDirectory(self, "Select Images Directory")
+		self.path_label.setText(f"<i>{self.folder}</i>" if self.folder else self.default_file_text)
+		self.file = None
 		self.parse_headers()
 		self.check_predict_button()
 
 	def check_predict_button(self):
 		# enable the button when we have both a model and file
-		if self.tf_directory and self.file:
+		if self.tf_directory and (self.file or self.folder):
 			self.predict_button.setEnabled(True)
 		else:
 			self.predict_button.setEnabled(False)
@@ -137,14 +150,21 @@ class Model(QFrame):
 		self.predict_button.setText(self.predicting_text)
 		self.model_button.setEnabled(False)
 		self.file_button.setEnabled(False)
+		self.folder_button.setEnabled(False)
 		self.progress_bar.setValue(0)
 		self.progress_bar.show()
 		self.app.processEvents()
 		url_col = self.url_dropdown.currentText()
 		try:
-			predict_dataset(model_dir=self.tf_directory, filepath=self.file, url_col=url_col, progress_hook=self.progress_hook)
+			if self.file:
+				predict_dataset(model_dir=self.tf_directory, filepath=self.file, url_col=url_col,
+				                progress_hook=self.progress_hook)
+			elif self.folder:
+				predict_folder(model_dir=self.tf_directory, img_dir=self.folder, move=True, csv=True,
+				               progress_hook=self.progress_hook)
 		except Exception as e:
-			QMessageBox.about(self, "Alert", f"Error creating dataset: {e}")
+			QMessageBox.about(self, "Alert", f"Error predicting: {e}")
+		finally:
 			self.done()
 
 	def progress_hook(self, current, total):
@@ -161,4 +181,5 @@ class Model(QFrame):
 		self.predict_button.setText(self.predict_text)
 		self.model_button.setEnabled(True)
 		self.file_button.setEnabled(True)
+		self.folder_button.setEnabled(True)
 		self.app.processEvents()

@@ -1,4 +1,3 @@
-import os
 from PyQt5.QtWidgets import QButtonGroup, QPushButton, QVBoxLayout, QFrame, QLabel
 from PyQt5.QtGui import QPixmap
 from app import resource_path
@@ -6,13 +5,13 @@ from app import resource_path
 
 class NavBar(QFrame):
 
-	def __init__(self, click_callback):
+	def __init__(self, click_callback, tabs):
 		super().__init__()
 		# initialize our variables
 		self.click_callback = click_callback
-		self.init_ui()
+		self.init_ui(tabs)
 
-	def init_ui(self):
+	def init_ui(self, tabs):
 		# make our UI
 		self.buttons = QButtonGroup(self)
 		self.buttons.buttonClicked.connect(lambda button: self.click_callback(button.text()))
@@ -24,27 +23,21 @@ class NavBar(QFrame):
 		label.setScaledContents(True)
 		label.setObjectName("logo")
 
-		# dataset button
-		dataset_button = self.nav_button("Dataset")
-		dataset_button.setChecked(True)
-
-		# model button
-		model_button = self.nav_button("Model")
-
-		# flickr button
-		flickr_button = self.nav_button("Flickr")
+		# our tab buttons
+		buttons = [self.nav_button(tab) for tab in tabs]
+		# set the first one as checked by default
+		buttons[0].setChecked(True)
 
 		layout = QVBoxLayout()
 		layout.addWidget(label)
-		layout.addWidget(dataset_button)
-		layout.addWidget(model_button)
-		layout.addWidget(flickr_button)
+		# add our buttons
+		for button in buttons:
+			layout.addWidget(button)
 		layout.addStretch(1)
 		layout.setContentsMargins(0, 0, 0, 0)
 		layout.setSpacing(0)
 		self.setLayout(layout)
 		self.setObjectName("navbar")
-
 
 	def nav_button(self, name):
 		button = QPushButton(name)

@@ -26,20 +26,25 @@ PROJECT_BLOBS = os.path.join('data', 'blobs')
 
 def get_projects():
     """
-    Generator that returns tuples of (project name, project id) from Lobe's appdata directory
+    Returns tuples of (project name, project id) from Lobe's appdata directory, sorted by modified date
     """
+    projects = []
     for project in os.listdir(PROJECTS_DIR):
         project_dir = os.path.join(PROJECTS_DIR, project)
         if os.path.isdir(project_dir):
             try:
-                with open(os.path.join(project_dir, PROJECT_JSON_FILE), 'r') as f:
+                project_json_file = os.path.join(project_dir, PROJECT_JSON_FILE)
+                with open(project_json_file, 'r') as f:
                     project_json = json.load(f)
                     project_id = project_json.get(PROJECT_ID_KEY)
                     project_name = project_json.get(PROJECT_META_KEY, {}).get(PROJECT_NAME_KEY)
-                    yield (project_name, project_id)
+                    # return the name, the id, and the modified datetime for sorting by recency
+                    projects.append(((project_name, project_id), os.path.getmtime(project_json_file)))
             except Exception:
                 # didn't have the project.json file (old alpha projects)
                 pass
+    projects = sorted(projects, key=lambda x: x[1], reverse=True)  # sort by the modified date
+    return [info for info, _ in projects]
 
 
 def export_dataset(project_id, destination_dir, progress_hook=None):

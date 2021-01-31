@@ -6,6 +6,10 @@ class NoStretch(QFrame):
 		super().__init__()
 		layout = QHBoxLayout()
 		layout.setContentsMargins(0, 0, 0, 0)
-		layout.addWidget(widget)
+		if isinstance(widget, list) or isinstance(widget, tuple):
+			for w in widget:
+				layout.addWidget(w)
+		else:
+			layout.addWidget(widget)
 		layout.addStretch(1)
 		self.setLayout(layout)
