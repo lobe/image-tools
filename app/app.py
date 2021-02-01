@@ -61,7 +61,7 @@ class MainWindow(QMainWindow):
 
     def init_ui(self):
         # make our UI
-        self.setMinimumSize(900, 600)
+        self.setMinimumSize(900, 650)
         self.setWindowTitle("Image Tools")
         self.center()
 
