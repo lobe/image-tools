@@ -12,6 +12,20 @@ on the latest build, you should see a section titled 'Artifacts' with an item ca
 When you click on this artifact, it should download the zip containing the app for you!
 
 *Support for MacOS is still in progress.*
+### Run Desktop application on MacOS
+While the compiled Mac app does not work because it is unsigned, you can either create it locally or run the app via
+Python command line.
+1. Make sure you have Python 3.7 or Python 3.8. See guide here for installing: https://www.python.org/downloads/mac-osx/
+2. Download this code repository to your machine.
+3. Open a terminal and navigate to where you downloaded this code with the `cd` command, or open the 
+   terminal directly at the *Image Tools* folder by right clicking on it and selecting *Services > Open Terminal at Folder*
+4. Install dependencies via `pip3 install -r requirements.txt` (make sure your pip3 is pointing to your Python 3.7 or 3.8 installation by checking `pip3 --version`)
+5. Run the app!
+   * Run from command line: `python3 -m app.app`
+   * Compile the app yourself: `pyinstaller --windowed --onefile app/app.spec`. This will create a `dist/` folder that contains
+  the app you can run.
+   
+
 
 ## Code Setup
 These tools were developed with python 3.7.7
@@ -84,7 +98,7 @@ exported folder and drag it directly to a new project in Lobe.
 You can create a desktop GUI application using PyInstaller:
 
 ```shell script
-pyinstaller --onefile app/app.spec
+pyinstaller --onefile --windowed app/app.spec
 ```
 
 This will create a `dist/` folder that will contain the application file `Image Tools.exe` or `Image Tools.app`
