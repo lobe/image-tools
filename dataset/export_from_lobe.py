@@ -8,6 +8,7 @@ import json
 import sqlite3
 from shutil import copyfile
 from tqdm import tqdm
+from PIL import Image
 
 if platform == 'darwin':
     PROJECTS_DIR_MAC = '~/Library/Application Support/lobe/projects'
@@ -86,15 +87,10 @@ def _export_blob(blob_path, destination_dir, cursor):
     blob_id = os.path.basename(blob_path)
     # search the db cursor for the label of the blob
     select_statement = """
-    SELECT t1.item 
-    FROM data_items AS t1
-    WHERE t1.type = "text"
-    AND t1.example_id = (
-        SELECT t2.example_id
-        FROM data_items AS t2
-        WHERE t2.type = "image"
-        AND t2.hash = ?
-    )
+    SELECT example_labels.label
+    FROM example_labels 
+    JOIN example_images ON example_images.example_id = example_labels.example_id
+    WHERE example_images.hash = ?
     """
     cursor.execute(select_statement, [blob_id])
     label = cursor.fetchone()
@@ -103,9 +99,10 @@ def _export_blob(blob_path, destination_dir, cursor):
         label = label[0]
         destination_dir = os.path.join(destination_dir, label)
     os.makedirs(destination_dir, exist_ok=True)
-    # make our .jpg filename from the blob file
-    destination_file = os.path.join(destination_dir, f'{blob_id}.jpg')
-    copyfile(src=blob_path, dst=destination_file)
+    # get our image and save it with the native format in our new directory
+    img = Image.open(blob_path)
+    destination_file = os.path.join(destination_dir, f'{blob_id}.{img.format.lower()}')
+    img.save(destination_file, quality=100)
 
 
 if __name__ == '__main__':
