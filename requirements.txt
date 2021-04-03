@@ -1,7 +1,9 @@
-pandas==1.2.1
-tqdm==4.56.0
+pandas==1.2.3
+xlrd==2.0.1
+openpyxl==3.0.7
+tqdm==4.59.0
 requests==2.25.1
 pyinstaller==4.2
-PyQT5==5.15.2
-pillow==8.1.1
-lobe==0.3.0
+PyQT5==5.15.4
+pillow==8.2.0
+git+git://github.com/lobe/lobe-python#egg=lobe
