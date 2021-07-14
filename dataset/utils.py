@@ -38,7 +38,6 @@ def download_image(url, directory, lock, label=None):
 
 
 def _get_filepath(url, save_dir):
-	sep = "__"
 	# given a url and download folder, return the full filepath to image to save
 	# get the name from the last url segment
 	filename = str(url.split('/')[-1])
@@ -46,7 +45,17 @@ def _get_filepath(url, save_dir):
 	filename = filename.split('?')[0]
 	# if this file already exists in the path, increment its name
 	# (since different URLs can have the same end filename)
-	while os.path.exists(os.path.join(save_dir, filename)):
+	filename = _resolve_filename_conflict(directory=save_dir, filename=filename)
+	# now that we found the filename, make an empty file with it so that we don't have to wait file to download
+	# for subsequent name searches
+	filename = os.path.join(save_dir, filename)
+	open(filename, 'a').close()
+	return filename
+
+
+def _resolve_filename_conflict(directory, filename, sep="__"):
+	# if this file already exists in the path, increment its name
+	while os.path.exists(os.path.join(directory, filename)):
 		name, extension = os.path.splitext(filename)
 		name_parts = name.rsplit(sep, 1)
 		base_name = name_parts[0]
@@ -58,8 +67,4 @@ def _get_filepath(url, save_dir):
 			except ValueError:
 				base_name = sep.join(name_parts)
 		filename = f"{base_name}{sep}{counter}{extension}"
-	# now that we found the filename, make an empty file with it so that we don't have to wait file to download
-	# for subsequent name searches
-	filename = os.path.join(save_dir, filename)
-	open(filename, 'a').close()
 	return filename

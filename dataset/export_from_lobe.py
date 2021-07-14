@@ -6,9 +6,11 @@ from sys import platform
 import os
 import json
 import sqlite3
-from shutil import copyfile
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from threading import Lock
 from tqdm import tqdm
 from PIL import Image
+from dataset.utils import _resolve_filename_conflict
 
 if platform == 'darwin':
     PROJECTS_DIR_MAC = '~/Library/Application Support/lobe/projects'
@@ -48,7 +50,7 @@ def get_projects():
     return [info for info, _ in projects]
 
 
-def export_dataset(project_id, destination_dir, progress_hook=None):
+def export_dataset(project_id, destination_dir, progress_hook=None, batch_size=1000):
     """
     Given a project id and a destination export parent directory, copy the images into a subfolder structure
     """
@@ -64,14 +66,48 @@ def export_dataset(project_id, destination_dir, progress_hook=None):
         # db connection
         conn = sqlite3.connect(db_file)
         cursor = conn.cursor()
-        # walk through our data blobs, find a corresponding label, and save to the appropriate location
-        blobs = [os.path.join(blob_dir, name_) for name_ in os.listdir(blob_dir) if os.path.isfile(os.path.join(blob_dir, name_))]
-        num_processed = 0
-        for blob_path in tqdm(blobs):
-            _export_blob(blob_path=blob_path, destination_dir=destination_dir, cursor=cursor)
-            num_processed += 1
-            if progress_hook:
-                progress_hook(num_processed, len(blobs))
+        # go through the data item entries in the db, find the blob filenames, and save to the appropriate location
+        # first get the total number of images for our progress bar
+        cursor.execute("SELECT count(*) FROM example_images")
+        num_images = cursor.fetchone()
+        if not num_images:
+            print(f"Didn't find any images for project {project_id}")
+        else:
+            num_images = num_images[0]
+            futures = []
+            lock = Lock()
+            examples_query = """
+            SELECT example_images.hash, example_labels.label
+            FROM example_images LEFT JOIN example_labels
+            ON example_images.example_id = example_labels.example_id
+            LIMIT ?
+            OFFSET ?
+            """
+            with tqdm(total=num_images) as pbar:
+                with ThreadPoolExecutor() as executor:
+                    for offset in range(0, num_images, batch_size):
+                        cursor.execute(examples_query, [batch_size, offset])
+                        res = cursor.fetchall()
+                        for row in res:
+                            img_hash, label = row
+                            # get the image filepath from the hash
+                            img_filepath = os.path.join(blob_dir, img_hash)
+                            # if we had a label, make the destination directory the subdirectory with label name
+                            dest_dir = os.path.join(destination_dir, label) if label is not None else destination_dir
+                            futures.append(
+                                executor.submit(
+                                    _export_blob, blob_path=img_filepath, destination_dir=dest_dir, lock=lock
+                                )
+                            )
+
+                    num_processed = 0
+                    # wait for all our futures
+                    for _ in as_completed(futures):
+                        # update our progress bar for the finished image
+                        pbar.update(1)
+                        num_processed += 1
+                        if progress_hook:
+                            progress_hook(num_processed, num_images)
     except Exception as e:
         print(f"Error exporting project {project_id} to {destination_dir}:\n{e}")
     finally:
@@ -79,29 +115,27 @@ def export_dataset(project_id, destination_dir, progress_hook=None):
             conn.close()
 
 
-def _export_blob(blob_path, destination_dir, cursor):
+def _export_blob(blob_path, destination_dir, lock=None):
     """
-    Given an image blob and a db connection, export the image to the correct destination based on the label
+    Export the image to the destination, resolving names on conflict
     """
-    # get the blob id from the blob path
-    blob_id = os.path.basename(blob_path)
-    # search the db cursor for the label of the blob
-    select_statement = """
-    SELECT example_labels.label
-    FROM example_labels 
-    JOIN example_images ON example_images.example_id = example_labels.example_id
-    WHERE example_images.hash = ?
-    """
-    cursor.execute(select_statement, [blob_id])
-    label = cursor.fetchone()
-    # if we had a label, make the destination directory the subdirectory with label name
-    if label:
-        label = label[0]
-        destination_dir = os.path.join(destination_dir, label)
     os.makedirs(destination_dir, exist_ok=True)
     # get our image and save it with the native format in our new directory
+    # get the blob id from the blob path
+    blob_id = os.path.basename(blob_path)
     img = Image.open(blob_path)
-    destination_file = os.path.join(destination_dir, f'{blob_id}.{img.format.lower()}')
+    img_filename = f'{blob_id}.{img.format.lower()}'
+    # look for file name conflict and resolve
+    if lock:
+        with lock:
+            img_filename = _resolve_filename_conflict(directory=destination_dir, filename=img_filename)
+            # now that we found the filename, make an empty file with it so that we don't have to wait file to download
+            # for subsequent name searches with threading
+            open(os.path.join(destination_dir, img_filename), 'a').close()
+    else:
+        img_filename = _resolve_filename_conflict(directory=destination_dir, filename=img_filename)
+    # now save the file
+    destination_file = os.path.join(destination_dir, img_filename)
     img.save(destination_file, quality=100)
 
 
