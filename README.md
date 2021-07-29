@@ -88,7 +88,7 @@ This will create an `images.csv` file in your destination folder that includes t
 ### Export Lobe dataset
 Export your project's dataset by giving the project name and desired export directory:
 ```shell script
-python dataset/export_from_lobe.py 'Project Name' destination/export/folder
+python -m dataset.export_from_lobe 'Project Name' destination/export/folder
 ```
 Your images will be copied to the destination folder, and their labels will be the subfolder name. You can take this
 exported folder and drag it directly to a new project in Lobe.
