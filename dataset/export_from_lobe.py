@@ -10,7 +10,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from threading import Lock
 from tqdm import tqdm
 from PIL import Image
-from dataset.utils import _resolve_filename_conflict
 
 if platform == 'darwin':
     PROJECTS_DIR_MAC = '~/Library/Application Support/lobe/projects'
@@ -25,6 +24,22 @@ PROJECT_META_KEY = 'meta'
 PROJECT_NAME_KEY = 'name'
 PROJECT_DB_FILE = 'db.sqlite'
 PROJECT_BLOBS = os.path.join('data', 'blobs')
+
+def _resolve_filename_conflict(directory, filename, sep="__"):
+	# if this file already exists in the path, increment its name
+	while os.path.exists(os.path.join(directory, filename)):
+		name, extension = os.path.splitext(filename)
+		name_parts = name.rsplit(sep, 1)
+		base_name = name_parts[0]
+		# get the counter value after the sep
+		counter = 1
+		if len(name_parts) > 1:
+			try:
+				counter = int(name_parts[-1]) + 1
+			except ValueError:
+				base_name = sep.join(name_parts)
+		filename = f"{base_name}{sep}{counter}{extension}"
+	return filename
 
 
 def get_projects():
