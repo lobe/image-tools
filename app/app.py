@@ -11,6 +11,7 @@ from app.components.dataset import Dataset
 from app.components.model import Model
 from app.components.flickr import Flickr
 from app.components.export import Export
+from app.components.visualize import Visualize
 from app import resource_path
 
 
@@ -47,6 +48,7 @@ class Tabs:
     MODEL = 'Model'
     FLICKR = 'Flickr'
     EXPORT = 'Export'
+    VISUALIZE = 'Visualize'
 
 
 class MainWindow(QMainWindow):
@@ -73,6 +75,7 @@ class MainWindow(QMainWindow):
             (Tabs.MODEL, Model(self.app)),
             (Tabs.EXPORT, Export(self.app)),
             (Tabs.FLICKR, Flickr(self.app)),
+            (Tabs.VISUALIZE, Visualize(self.app)),
         ])
 
         navbar = NavBar(self.nav_click, list(self.pages.keys()))
