@@ -5,5 +5,5 @@ tqdm==4.62.3
 requests==2.26.0
 pyinstaller==4.5.1
 PyQT5==5.15.5
-pillow==8.4.0
+pillow==9.0.0
 lobe[tf]==0.6.0
