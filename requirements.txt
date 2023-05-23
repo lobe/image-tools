@@ -2,7 +2,7 @@ pandas==1.4.1
 xlrd==2.0.1
 openpyxl==3.0.9
 tqdm==4.62.3
-requests==2.27.1
+requests==2.31.0
 pyinstaller==4.9
 PyQT5==5.15.6
 pillow==9.0.1
