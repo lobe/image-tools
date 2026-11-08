@@ -33,7 +33,7 @@ def download_flickr(
 	# everything in try/catch for keyboard interrupt
 	print(f"Searching Flickr with params {search_params}")
 	try:
-		response = requests.get(url=base_url, params=search_params)
+		response = requests.get(url=base_url, params=search_params, timeout=30)
 		duplicates = 0
 		search_errors = 0
 		download_errors = 0
@@ -166,7 +166,7 @@ def get_photo_location(url, api_key, photo_id) -> Tuple[Optional[float], Optiona
 			'method': 'flickr.photos.geo.getLocation',
 			'photo_id': photo_id,
 		}
-		response = requests.get(url=url, params=exif_params)
+		response = requests.get(url=url, params=exif_params, timeout=30)
 		if response.ok:
 			root = ET.fromstring(response.content)
 			photo = root.find('photo')
@@ -191,7 +191,7 @@ def get_photo_info(url, api_key, photo_id, secret) -> Tuple[Optional[str], Optio
 			'photo_id': photo_id,
 			'secret': secret,
 		}
-		response = requests.get(url=url, params=info_params)
+		response = requests.get(url=url, params=info_params, timeout=30)
 		if response.ok:
 			root = ET.fromstring(response.content)
 			photo = root.find('photo')
